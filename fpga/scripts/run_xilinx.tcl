@@ -20,6 +20,8 @@ if { $PROJECT eq "z1" } {
   puts "ERROR: VCU118 constraints are empty"
 } elseif { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag"} {
   set XILINX_PART xc7a35tcpg236-1
+} elseif { $PROJECT eq "nexys_a7"} {
+  set XILINX_PART xc7a100tcsg324-1
 } else {
   puts "PROJECT variable contains unsupported board!"
   break
@@ -52,7 +54,7 @@ set_property include_dirs $INCLUDE_DIRS [current_fileset]
 
 # File read
 # Bender tags - add bscane only for basys3_vjtag project
-if { $PROJECT eq "basys3_vjtag" } {
+if { $PROJECT eq "basys3_vjtag" || $PROJECT eq "nexys_a7" } {
   add_files -norecurse -scan_for_includes [exec bender script flist -t fpga -t xilinx -t rtl -t vendor -t synthesis -t didactic_obi -t bscane]
 } else {
   add_files -norecurse -scan_for_includes [exec bender script flist -t fpga -t xilinx -t rtl -t vendor -t synthesis -t didactic_obi]
@@ -64,20 +66,29 @@ if { $PROJECT eq "z1" } {
 if { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag" } {
   add_files -norecurse $DIR/rtl/DidacticBasys3.v
 }
+if { $PROJECT eq "nexys_a7" } {
+  add_files -norecurse $DIR/rtl/DidacticNexys_A7.v
+}
 
 set_property file_type SystemVerilog [get_files *.v]
 
 # 
 set_property is_global_include true [get_files prim_assert_dummy_macros.svh]
 
-# Use xilinx specific cg          
-set_property verilog_define { SYNTHESIS=1 FPGA=1 PRIM_DEFAULT_IMPL=prim_pkg::ImplXilinx} [current_fileset]
+# Use xilinx specific cg
+if { $PROJECT eq "nexys_a7" } {
+  set_property verilog_define {VJTAG=1 SYNTHESIS=1 FPGA=1 PRIM_DEFAULT_IMPL=prim_pkg::ImplXilinx} [current_fileset]
+} else {          
+  set_property verilog_define {SYNTHESIS=1 FPGA=1 PRIM_DEFAULT_IMPL=prim_pkg::ImplXilinx} [current_fileset]
+}
 
 set_property source_mgmt_mode None [current_project]
 if { $PROJECT eq "z1" } {
   set_property top DidacticZ1 [current_fileset]
 } elseif { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag" } {
   set_property top DidacticBasys3 [current_fileset]
+} elseif { $PROJECT eq "nexys_a7" } {
+  set_property top DidacticNexys_A7 [current_fileset]
 } else {
   set_property top Didactic [current_fileset]
 }

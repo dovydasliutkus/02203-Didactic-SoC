@@ -8,7 +8,7 @@
 SHELL = bash
 VIVADO ?= vivado
 
-TEST ?= blink
+TEST ?= blinky
 
 export BUILD_DIR ?= ../build
 export PROJECT ?= z1
