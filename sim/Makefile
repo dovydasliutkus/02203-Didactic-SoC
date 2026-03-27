@@ -84,6 +84,7 @@ compile: env compile_didactic
 compile_didactic:
 	vlib $(BUILD_DIR)/didactic_lib
 	vmap didactic_lib $(BUILD_DIR)/didactic_lib
+	@grep -q "^CppPath" $(BUILD_DIR)/modelsim.ini 2>/dev/null || echo "CppPath = /usr/bin/gcc" >> $(BUILD_DIR)/modelsim.ini
 	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(INCLUDES) $(DUT_LIBS) \
 	$(VLOG_OPTS) $(SIM_FLIST) -l $(BUILD_DIR)/logs/compile/$(START_TIME)_didactic.log
 
@@ -104,7 +105,7 @@ elaborate: library_mapping
 run_sim: library_mapping
 	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
-	vsim $(GUI) \
+	LD_PRELOAD=$(realpath $(CURDIR)/../scripts/gcc_intercept.so) vsim $(GUI) \
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \

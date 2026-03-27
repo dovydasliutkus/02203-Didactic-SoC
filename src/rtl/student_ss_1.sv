@@ -122,7 +122,7 @@ module student_ss_1 #(
     PRDATA  <= PRDATA_reg;
     PREADY  <= PREADY_reg;
 
-    pmod_gpo <= field_0 [7:0];
+    pmod_gpo[7:0] <= field_0 [7:0];
 
   end
 
