@@ -2,7 +2,8 @@ Top-level `DidacticNexys_A7` has no jtag ports.
 In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disables ios in 
 
 
-## TODO (short-term)
+## TODO
+- What simulator will the students use? ModelSim or free questa? Supposedly free questa should run the default scripts.
 - [ ] Task or issue
 - [ ] Task or bug
 - [ ] Idea to explore
@@ -22,13 +23,14 @@ In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disabl
 
 
 ### Next
+- Generate Didactic 1.1 with the example student subsystems.
 - Create the student subsystem block for `Task 0` (see block diagram in DoD_lab_plan.md)
 - Write sw to exercise the subsystem
 ---
 
-## 2026-03-24
+## 2026-03-26
 ### Did
-- 
+- Generated Didactic 1.1 using scripts/run_kactus2_script.sh.
 - 
 
 ### Notes

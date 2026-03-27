@@ -13,7 +13,7 @@ The Student SubSystem contains a simple pixel inversion accelerator.
 
 The accelerator consists of an input buffer, an output buffer, a control/status register (CSR) and a processing FSM that performs pixel inversion.
 
-![Student SS with pixel inversion accelerator](../figures/student_ss_bd.drawio.svg)
+![Student SS with pixel inversion accelerator](figures/student_ss_bd.drawio.svg)
 
 The CPU controls the accelerator and performs the following steps:
 
