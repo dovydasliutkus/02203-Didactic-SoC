@@ -464,6 +464,8 @@ module Didactic #(
     assign SystemControl_SS_irq_i[1] = Student_SS_1_irq_1_to_SystemControl_SS_irq_i;
     assign SystemControl_SS_irq_i[2] = Student_SS_2_irq_2_to_SystemControl_SS_irq_i;
     assign SystemControl_SS_irq_i[3] = Student_SS_3_irq_3_to_SystemControl_SS_irq_i;
+    // Tie off unused irq
+    assign SystemControl_SS_irq_i[4] = 1'b0;
     assign SystemControl_SS_OBI_to_i_obi_icn_ss_OBI_addr = SystemControl_SS_obi_addr;
     assign SystemControl_SS_OBI_to_i_obi_icn_ss_OBI_aid = SystemControl_SS_obi_aid;
     assign SystemControl_SS_OBI_to_i_obi_icn_ss_OBI_be = SystemControl_SS_obi_be;
