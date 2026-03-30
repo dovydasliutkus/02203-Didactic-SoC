@@ -31,12 +31,12 @@ In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disabl
 ## 2026-03-26
 ### Did
 - Generated Didactic 1.1 using scripts/run_kactus2_script.sh.
-- 
-
-### Notes
-- 
 
 ### Next
-- 
+- Create the student subsystem block for `Task 0` (see block diagram in DoD_lab_plan.md)
 
 ---
+
+## 2026-03-30
+### Did
+- Created subsystem block for pixel inversion
