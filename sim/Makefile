@@ -35,13 +35,13 @@ DUT_LIBS = \
 # vsim-8386: suppress bit-to-reg assignment errors
 VSIM_OPTS = \
 	-suppress vsim-3009 \
-	-voptargs=+acc=npr \
 	-suppress vsim-8386 \
 
 VOPT_OPTS = \
 	-sv \
+	-O5 \
 	-suppress vopt-2577 \
-	+acc=npr \
+	+acc=npr+/tb_didactic \
 
 # vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = \
@@ -84,7 +84,6 @@ compile: env compile_didactic
 compile_didactic:
 	vlib $(BUILD_DIR)/didactic_lib
 	vmap didactic_lib $(BUILD_DIR)/didactic_lib
-	@grep -q "^CppPath" $(BUILD_DIR)/modelsim.ini 2>/dev/null || echo "CppPath = /usr/bin/gcc" >> $(BUILD_DIR)/modelsim.ini
 	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(INCLUDES) $(DUT_LIBS) \
 	$(VLOG_OPTS) $(SIM_FLIST) -l $(BUILD_DIR)/logs/compile/$(START_TIME)_didactic.log
 
@@ -105,7 +104,7 @@ elaborate: library_mapping
 run_sim: library_mapping
 	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
-	LD_PRELOAD=$(realpath $(CURDIR)/../scripts/gcc_intercept.so) vsim $(GUI) \
+	vsim $(GUI) \
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \

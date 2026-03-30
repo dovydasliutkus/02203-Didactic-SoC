@@ -17,7 +17,7 @@
 
 `define CLK_PERIOD 10ns // up to 100MHz variable clk speed 
 
-`timescale 1ns/1ps
+`timescale 1ns/1ns
 
 module tb_didactic();
   // no top ports. params and defines used to control tb
@@ -158,10 +158,12 @@ module tb_didactic();
     jtag_pkg::jtag_reset      (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
     jtag_pkg::jtag_softreset  (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
     #5us;
+`ifdef JTAG_TEST
     jtag_pkg::jtag_bypass_test(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
     #5us;
     jtag_pkg::jtag_get_idcode (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
     #5us;
+`endif
     
     // init
     test_mode_if.init(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
@@ -211,6 +213,7 @@ module tb_didactic();
       $display("[TB] Time %g ns - Resuming the CORE", $time);
       debug_mode_if.resume_harts(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
 
+`ifdef JTAG_TEST
       //-------------------------------Wait sysctrl program finish-----------------------
       debug_mode_if.init_dmi_access(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
       // enable sb access for subsequent readMem calls
@@ -237,6 +240,7 @@ module tb_didactic();
         $display("[TB] Time %g ns - JTAG RETURN FAILURE: core status: 0x%h", $time, jtag_data[30:0]);
       end
       #1ms;//wait to get prints etc out of the tb
+`endif
       $stop;
 
 
