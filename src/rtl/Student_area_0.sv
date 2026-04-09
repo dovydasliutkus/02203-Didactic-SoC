@@ -38,7 +38,7 @@ module Student_area_0 #(
     input  logic                PSEL,
     input  logic [31:0]         PWDATA,
     input  logic                PWRITE,
-    input  logic [3:0]          PSTRB, // Unused
+    input  logic [3:0]          PSTRB,      // Unused
     output logic [31:0]         PRDATA,
     output logic                PREADY,
     output logic                PSLVERR,
@@ -47,7 +47,7 @@ module Student_area_0 #(
     output logic                irq,
 
     // Interface: SS_Ctrl
-    input  logic [7:0]          clk_ctrl,
+    input  logic [7:0]          clk_ctrl,   // Unused
     input  logic                irq_en,
 
     // Interface: clk

@@ -110,3 +110,36 @@ run_sim: library_mapping
 	$(DUT)_opt \
 	-do "run 0ms;" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log
+
+#============================================================
+# Isolated test for Student_area_0 with tb_student_ss
+#============================================================
+
+SS_TB = tb_student_ss
+SS_TB_SRC = ../src/tb/tb_student_ss.sv ../src/rtl/Student_area_0.sv
+
+compile_ss: env
+	vlib $(BUILD_DIR)/didactic_lib
+	vmap didactic_lib $(BUILD_DIR)/didactic_lib
+	vlog -sv -work didactic_lib $(VLOG_OPTS) $(SS_TB_SRC) \
+	-l $(BUILD_DIR)/logs/compile/$(START_TIME)_ss.log
+
+elaborate_ss: library_mapping
+	mkdir -p $(BUILD_DIR)/logs/opt
+	vopt \
+	$(DUT_LIBS) $(VOPT_OPTS) \
+	-work $(BUILD_DIR)/didactic_lib \
+	$(SS_TB) \
+	-o $(SS_TB)_opt \
+	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_ss_vopt.log
+
+run_ss: library_mapping
+	mkdir -p $(BUILD_DIR)/logs/sim
+	vsim $(GUI) \
+	$(DUT_LIBS) $(VSIM_OPTS) \
+	-work $(BUILD_DIR)/didactic_lib \
+	$(SS_TB)_opt \
+	-do "run -all;" \
+	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_ss_sim.log
+
+sim_ss: compile_ss elaborate_ss run_ss

@@ -14,3 +14,5 @@ vendor_ips
 *.str
 .Xil
 Bender.lock
+
+src/tb/out_images/*
