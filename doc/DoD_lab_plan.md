@@ -1,7 +1,7 @@
 
 # Image processing accelerator with CPU Data transport
 
-This laboratory exercise extends the existing image processing accelerator by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheral.
+This laboratory exercise extends the existing image processing accelerator lab by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheral.
 
 The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, hardware–software co-design.
 
@@ -9,7 +9,7 @@ The goal is to expose students to memory-mapped hardware modules, a simple SoC a
 ## Tasks
 ### 0.  Test the Didactic-SoC with a Working Example
 
-The Student SubSystem contains a simple pixel inversion accelerator. 
+The Student Sub-System in `src/rtl/Student_area_0.sv` contains a simple pixel inversion accelerator. 
 
 The accelerator consists of an input buffer, an output buffer, a control/status register (CSR) and a processing FSM that performs pixel inversion.
 
@@ -17,13 +17,13 @@ The accelerator consists of an input buffer, an output buffer, a control/status 
 
 The CPU controls the accelerator and performs the following steps:
 
-
-1. Copy image data from **DMEM** to the accelerator **input buffer**.
+1. Receive image data via **UART** and copy it to the accelerator **input buffer**.
 2. Set the **DATA_READY** bit in the CSR to start processing.
 3. Poll the **DONE** bit in the CSR.
-4. When processing is complete, copy the processed data from the **output buffer** back into **DMEM** (different location).
+4. When processing is complete (**DONE = 1**), send the processed image back via **UART**.
 
-The testbench then reads this processed memory region and writes it into a PGM image file.
+On the FPGA, the image is sent from a PC over UART, processed by the SoC, and returned to the PC. The testbench mirrors this flow: it acts as the PC, sending the image over UART and receiving the result, which it then saves as a `.pgm` file for visual inspection.
+
 The generated `.pgm` file can be viewed using software such as **IrfanView** or any image viewer that supports the PGM format.
 
 ---
@@ -40,17 +40,20 @@ Draw a block diagram showing the datapath you have designed and develop an ASMD 
 
 #### RTL design
 
-Using your ASMD chart and block diagram, implement the edge detection accelerator in RTL. Don't write your code in the the full Didactic-SoC yet, as that will make debugging more difficult. Instead use the provided standalone accelerator testbench. 
+Using your ASMD chart and block diagram, implement the edge detection accelerator in RTL. Write your code in `src/rtl/Student_area_0.sv`, replacing the pixel inversion logic from Task 0.
 
-The testbench will:
+To test your design, go to the `sim/` directory and run
 
-1. provide an input image
-2. run the simulation
-3. write the processed image to a **PGM** file
+```
+make sim_ss
+```
 
-This allows you to verify the functionality of your accelerator before system integration.
+This will run `src/tb/tb_student_ss.sv` which tests the standalone `Student_area_0` module. The testbench reads an input PGM (set by the `src_image` parameter), drives the accelerator via APB, and writes the processed result to a new PGM in `src/tb/out_images/`.
 
+This testbench is meant for verifying your edge detector design before system integration.
 
+TO BE REWORKED
+---
 ### 2.  Integrate the Accelerator into the SoC
 
 Once your RTL design works correctly with the standalone testbench, integrate the accelerator into the Didactic-SoC.

@@ -14,7 +14,7 @@ XLEN ?= 32
 PREFIX ?= riscv$(XLEN)-unknown-elf
 ARCH_FLAGS ?= -march=rv32imc -mabi=ilp32
 CC=$(PREFIX)-gcc
-CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/
+CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ -DSIM_FAST_UART
 OBJDUMP ?= $(PREFIX)-objdump
 OBJCOPY ?= $(PREFIX)-objcopy
 
@@ -26,6 +26,7 @@ build_test:
 	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -c $(TESTCASE)/$(TESTCASE).c -o $(BUILD_DIR)/sw/$(TESTCASE).o 
 	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -DLANGUAGE_ASSEBMLY -c common/crt0.S -o $(BUILD_DIR)/sw/crt0.o
 	$(CC) $(ARCH_FLAGS) -Tcommon/link.ld $(BUILD_DIR)/sw/$(TESTCASE).o $(BUILD_DIR)/sw/crt0.o -nostartfiles -nostdlib -Wl,--gc-sections -o $(BUILD_DIR)/sw/$(TESTCASE).elf
+	$(PREFIX)-size $(BUILD_DIR)/sw/$(TESTCASE).elf
 
 hex_test:
 	$(OBJCOPY) $(BUILD_DIR)/sw/$(TESTCASE).elf -O binary $(BUILD_DIR)/tmp.bin
@@ -38,7 +39,7 @@ trim:
 	head -$(shell wc -w < $(BUILD_DIR)/tmp_le.hex) $(BUILD_DIR)/tmp_le.hex > $(BUILD_DIR)/sw/$(TESTCASE).hex
 
 dump:
-	$(OBJDUMP) $(BUILD_DIR)/sw/$(TESTCASE).elf -d > $(BUILD_DIR)/sw/$(TESTCASE).asm
+	$(OBJDUMP) $(BUILD_DIR)/sw/$(TESTCASE).elf -d -S -l > $(BUILD_DIR)/sw/$(TESTCASE).asm
 
 cleanup:
 	@rm -fr $(BUILD_DIR)/sw/*.o 

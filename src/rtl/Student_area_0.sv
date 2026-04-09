@@ -125,7 +125,7 @@ always_ff @(posedge clk_in or negedge rst) begin
         fsm_state      <= FSM_IDLE;
         proc_addr      <= '0;
     end else begin
-        // APB Slave
+        // CSR and APB bus control (APB slave)
         if (PSEL) begin
             if (PREADY) begin
                 // deassert ready after transfer is accepted
@@ -203,7 +203,8 @@ always_ff @(posedge clk_in or negedge rst) begin
                 // ============================================================
                 // STUDENT: Starting with this state you should add logic to
                 // implement the edge detection algorithm.
-                obuf[proc_addr] <= ~ibuf[proc_addr];
+
+                obuf[proc_addr] <= ~ibuf[proc_addr];    // Invert pixel
 
                 if (proc_addr == BUF_AW'(BUF_DEPTH - 1))
                     fsm_state <= FSM_DONE;

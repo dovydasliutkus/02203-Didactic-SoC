@@ -41,7 +41,7 @@ VOPT_OPTS = \
 	-sv \
 	-O5 \
 	-suppress vopt-2577 \
-	+acc=npr+/tb_didactic \
+	+acc \
 
 # vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = \

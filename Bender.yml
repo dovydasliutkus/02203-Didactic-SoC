@@ -143,7 +143,7 @@ sources:
     - vendor_ips/pulp/rtl/vip/uart_tb_rx.sv
     - src/tb/spi/if_spi_slave.sv
     - src/tb/jtag/jtag_pkg.sv
-    - src/tb/tb_didactic.sv
+    - src/tb/tb_didactic_V1.sv
 
 vendor_package:
   - name: ibex

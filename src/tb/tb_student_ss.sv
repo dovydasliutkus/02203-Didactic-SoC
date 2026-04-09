@@ -2,7 +2,7 @@
 
 module tb_student_ss;
 
-parameter string src_image = "kaleidoscope.pgm";
+parameter string src_image = "pattern.pgm";
 
 parameter string src_image_path = "../src/tb/src_images/";
 parameter string out_image_path = "../src/tb/out_images/";

@@ -37,6 +37,28 @@ In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disabl
 
 ---
 
-## 2026-03-30
+## 2026-03-30   
 ### Did
-- Created subsystem block for pixel inversion
+- Created subsystem block for pixel inversion (`Task 0`)
+
+### Problem 1
+We cannot do full buffering in DMEM as we need 100kB of memory then, that shifts the entire address map which is mostly hardcoded and moving it is prone to cause bugs
+
+### Solution 1
+We buffer the full image only in the accelerator. The CPU copies the data in chunks from a virtual UART transmitter in the testbench. 
+
+The processed pgm will be generated straight from the accelerator output buffer.
+
+---
+
+## 2026-04-09   
+### Did
+- Cleaned up `Student_area_0`. Currently it is all in an `always_ff` block. ASK LUCA if I should change it to FSMD.
+- Created isolated testbench `src/tb/tb_student_ss.sv` for `Student_area_0`.
+- Added `sim_ss` target in `sim/Makefile`
+
+### Next
+- ASK LUCA if I should change `Student_area_0` to FSMD (Create always_comb block and move FSM case there).
+- WIP Full system example (`Task 0`)
+- pc jumps around for some reason, maybe try blinky for a start to isolate if the problem is from uart or from not using jtag (also could be the memory bug fix)
+
