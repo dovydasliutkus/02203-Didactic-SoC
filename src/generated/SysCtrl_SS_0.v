@@ -1028,7 +1028,7 @@ module SysCtrl_SS_0 #(
     assign ctrl_reg_array_wdata_i = ctrl_reg_array_obi_target_to_sysctrl_obi_xbar_obi_ctrl_wdata;
     assign ctrl_reg_array_we_i = ctrl_reg_array_obi_target_to_sysctrl_obi_xbar_obi_ctrl_we;
     // i_dmem assignments:
-    assign i_dmem_addr_i = i_dmem_mem_to_sysctrl_obi_xbar_obi_dmem_addr[11:0];
+    assign i_dmem_addr_i = i_dmem_mem_to_sysctrl_obi_xbar_obi_dmem_addr[13:2]; // byte→word
     assign i_dmem_be_i = i_dmem_mem_to_sysctrl_obi_xbar_obi_dmem_be;
     assign i_dmem_clk_i = jtag_dbg_wrapper_Clock_to_Clk_clk;
     assign i_dmem_mem_to_sysctrl_obi_xbar_obi_dmem_gnt = i_dmem_gnt_o;
@@ -1069,7 +1069,7 @@ module SysCtrl_SS_0 #(
     assign i_ibex_wrapper_irq_fast_i[8:4] = i_ibex_wrapper_irq_fast_i_to_sysctrl_irq_i;
     assign i_ibex_wrapper_rst_ni = jtag_dbg_wrapper_core_reset_to_i_ibex_wrapper_Reset_reset;
     // i_imem assignments:
-    assign i_imem_addr_i = i_imem_mem_to_sysctrl_obi_xbar_obi_imem_addr[11:0];
+    assign i_imem_addr_i = i_imem_mem_to_sysctrl_obi_xbar_obi_imem_addr[13:2]; // byte→word
     assign i_imem_be_i = i_imem_mem_to_sysctrl_obi_xbar_obi_imem_be;
     assign i_imem_clk_i = jtag_dbg_wrapper_Clock_to_Clk_clk;
     assign i_imem_mem_to_sysctrl_obi_xbar_obi_imem_gnt = i_imem_gnt_o;
@@ -1490,7 +1490,8 @@ module SysCtrl_SS_0 #(
         .instr_req_o         (i_ibex_wrapper_instr_req_o),
         .instr_reqpar_o      (i_ibex_wrapper_instr_reqpar_o),
         // These ports are not in any interface
-        .boot_addr_i         (32'h1040100),
+        // .boot_addr_i         (32'h1040100),
+        .boot_addr_i         (32'h1000000),
         .data_rdata_intg_i   (7'h0),
         .hart_id_i           (32'h0),
         .instr_rdata_intg_i  (7'h0),
