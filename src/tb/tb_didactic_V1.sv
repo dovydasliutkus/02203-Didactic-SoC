@@ -5,7 +5,7 @@ module tb_didactic;
 // ----------------------------------------------------------------
 // Parameters
 // ----------------------------------------------------------------
-parameter string HEX_FILE     = "../build/sw/pixel_inversion.hex";
+parameter string TESTCASE     = "blink";  // hex loaded from: ../build/sw/<TESTCASE>.hex
 parameter string SRC_IMAGE    = "kaleidoscope.pgm";
 parameter string SRC_IMG_PATH = "../src/tb/src_images/";
 parameter string OUT_IMG_PATH = "../src/tb/out_images/";
@@ -15,10 +15,10 @@ localparam int FRAME_HEIGHT = 288;
 localparam int TOTAL_PIXELS = FRAME_WIDTH * FRAME_HEIGHT;
 
 // UART bit period:
-//   SIM_FAST_UART: divisor=1  → 100 MHz / 16 = 6.25 Mbaud → 160 ns/bit
-//   default:       divisor=27 → ~230400 baud              → 4340 ns/bit
+//   SIM_FAST_UART: divisor=2  → 100 MHz / (16×2) = 3.125 Mbaud → 320 ns/bit
+//   default:       divisor=27 → ~230400 baud                    → 4340 ns/bit
 `ifdef SIM_FAST_UART
-  localparam real UART_BIT_NS = 160.0;
+  localparam real UART_BIT_NS = 320.0;  // divisor=2 → 100 MHz / (16×2) = 3.125 Mbaud
 `else
   localparam real UART_BIT_NS = 4340.0;
 `endif
@@ -116,8 +116,8 @@ initial begin
     // ----------------------------------------------------------
     // Load CPU program into IMEM
     // ----------------------------------------------------------
-    $readmemh(HEX_FILE, tb_didactic.i_didactic.SystemControl_SS.SysCtrl_SS.i_imem.ram);
-    $display("[TB] IMEM loaded from %s", HEX_FILE);
+    $readmemh({"../build/sw/", TESTCASE, ".hex"}, tb_didactic.i_didactic.SystemControl_SS.SysCtrl_SS.i_imem.ram);
+    $display("[TB] IMEM loaded from ../build/sw/%s.hex", TESTCASE);
 
     // ----------------------------------------------------------
     // Read input PGM (P2 ASCII: magic / comment / dims / maxval)
@@ -146,14 +146,16 @@ initial begin
     $display("[TB] Reset released");
 
     // Wait for CPU to boot and initialise UART
-    #500us;
+    #2500;
 
     // ----------------------------------------------------------
     // Send image pixels to CPU via UART (raw bytes)
     // ----------------------------------------------------------
     $display("[TB] Sending image via UART...");
-    for (i = 0; i < TOTAL_PIXELS; i++)
+    for (i = 0; i < TOTAL_PIXELS; i++) begin
         uart_send_byte(pixels_in[i]);
+        $display("[TB] Sent %0d / %0d bytes", i, TOTAL_PIXELS);
+    end
     $display("[TB] Image sent, waiting for result...");
 
     // ----------------------------------------------------------

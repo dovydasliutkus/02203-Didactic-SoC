@@ -6,6 +6,10 @@
 #   -Antti Nurmi
 ###
 
+# UART set to FAST by default
+FAST_UART ?= 1
+UART_FLAG = $(if $(filter 1,$(FAST_UART)),-DSIM_FAST_UART,)
+
 TESTCASE ?= blink
 START_TIME=`date +%F_%H:%M`
 SHELL = bash
@@ -14,7 +18,7 @@ XLEN ?= 32
 PREFIX ?= riscv$(XLEN)-unknown-elf
 ARCH_FLAGS ?= -march=rv32imc -mabi=ilp32
 CC=$(PREFIX)-gcc
-CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ -DSIM_FAST_UART
+CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ $(UART_FLAG)
 OBJDUMP ?= $(PREFIX)-objdump
 OBJCOPY ?= $(PREFIX)-objcopy
 

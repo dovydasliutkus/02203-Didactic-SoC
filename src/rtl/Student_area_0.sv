@@ -33,7 +33,7 @@ module Student_area_0 #(
     parameter int FRAME_HEIGHT = 288   // rows per frame
 )(
     // Interface: APB
-    input  logic [31:0]         PADDR,
+    input  logic [APB_AW-1:0]   PADDR,
     input  logic                PENABLE,
     input  logic                PSEL,
     input  logic [31:0]         PWDATA,

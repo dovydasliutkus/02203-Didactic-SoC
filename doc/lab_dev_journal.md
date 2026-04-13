@@ -1,12 +1,13 @@
-Top-level `DidacticNexys_A7` has no jtag ports.
-In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disables ios in 
+## Notes
+[change] Top-level `DidacticNexys_A7` has no jtag ports. In run_xilinx.tcl with the `nexys_a7` target the VJTAG macro is set which disables ios in `io_cell_frame_sysctrl.sv`.
 
+[risk] testbench was simplified to initialize IMEM with `$readmemh` support for DMEM initialization HAS NOT been added.
+
+[feature] To simulate picture loading from PC `tb_didactic_V1.sv` has two modes for UART. The modes are controlled by `FAST_UART` variable in Makefiles. When the variable is set the minimum clock divisor of 2 is used to maximise simulation speed. `FAST_UART` can also be set to 0 for more realistic 230400 baudrate @ 100MHz sys clk.
 
 ## TODO
-- What simulator will the students use? ModelSim or free questa? Supposedly free questa should run the default scripts.
-- [ ] Task or issue
-- [ ] Task or bug
-- [ ] Idea to explore
+- What simulator will the students use? ModelSim or free questa? Questa Starter Edition runs the scripts
+
 
 ---
 
@@ -60,5 +61,11 @@ The processed pgm will be generated straight from the accelerator output buffer.
 ### Next
 - ASK LUCA if I should change `Student_area_0` to FSMD (Create always_comb block and move FSM case there).
 - WIP Full system example (`Task 0`)
-- pc jumps around for some reason, maybe try blinky for a start to isolate if the problem is from uart or from not using jtag (also could be the memory bug fix)
+    - pc jumps around for some reason, maybe try blinky for a start to isolate if the problem is from uart or from not using jtag (also could be the memory bug fix)
 
+---
+
+## 2026-04-13
+### Did
+- blinky works with new - simplified - testbench. 
+- The testbench UART write is successfully transfered to `Student_area_0.IBUF`. (Fast and Slow UART both work)

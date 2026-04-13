@@ -55,13 +55,15 @@ int main(void)
 {
     ss_init(0);
     uart_init();
+    IIR_FCR = 0x07u; /* FIFO enable + RX reset + TX reset */
 
 #ifdef SIM_FAST_UART
     /* Override baud divisor for fast simulation.
-     * divisor=1 → 100 MHz / (16×1) = 6.25 Mbaud (16 cycles/bit).
-     * Testbench must be compiled with +define+SIM_FAST_UART to match. */
+     * divisor=2 → 100 MHz / (16×2) = 3.125 Mbaud (320 ns/bit).
+     * Testbench must be compiled with +define+SIM_FAST_UART to match.
+     * NOTE: divisor=1 is unusable — iBAUDOUTN gets stuck at 0 and RX never fires. */
     LCR = (1u << 7) | 3u;  /* enable DLAB */
-    RBR_THR_DLL = 1u;       /* divisor = 1 */
+    RBR_THR_DLL = 2u;       /* divisor = 2 → 100 MHz / (16×2) = 3.125 Mbaud (320 ns/bit) */
     LCR = 3u;               /* disable DLAB */
 #endif
 

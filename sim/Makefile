@@ -16,9 +16,13 @@ SHELL = bash
 DUT = tb_didactic
 
 # TB defines enable tb peripherals
+FAST_UART ?= 1
+UART_DEFINE = $(if $(filter 1,$(FAST_UART)),+define+SIM_FAST_UART,)
+
 TB_DEFINES = \
 	+define+USE_UART \
-	+define+USE_SPI 
+	+define+USE_SPI \
+	$(UART_DEFINE)
 
 # Dut defines:
 # * RVFi required by tracer

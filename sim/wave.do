@@ -20,11 +20,11 @@ add wave -noupdate /tb_didactic/dut_jtag_tms
 add wave -noupdate /tb_didactic/dut_jtag_tdo
 add wave -noupdate /tb_didactic/dut_gpio
 add wave -noupdate /tb_didactic/i
-add wave -noupdate -divider Ibex
+add wave -noupdate -divider {Ibex Core signals}
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/u_ibex_core/pc_if
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/u_ibex_core/if_stage_i/instr_valid_id_o
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/u_ibex_core/if_stage_i/instr_rdata_id_o
-add wave -noupdate -divider {instr fetch interface}
+add wave -noupdate -divider {Ibex IMEM IF}
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_req_o
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_gnt_i
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_rvalid_i
@@ -32,6 +32,26 @@ add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wr
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_rdata_i
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_rdata_intg_i
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/instr_err_i
+add wave -noupdate -divider {Ibex DMEM IF}
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_req_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_gnt_i
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_rvalid_i
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_we_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_be_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_addr_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_wdata_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_wdata_intg_o
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_rdata_i
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_rdata_intg_i
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_err_i
+add wave -noupdate -divider UART
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iSIN
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iSINr
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/SIN
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iLSR_DR
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iRXFIFOWrite
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/CLK
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/RSTN
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -divider Student_area_0
@@ -53,8 +73,6 @@ add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/rst
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/pmod_gpi
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/pmod_gpo
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/pmod_gpio_oe
-add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/ibuf
-add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/obuf
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/csr_data_ready
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/csr_done
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/csr_busy
@@ -63,7 +81,7 @@ add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/obuf_radd
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/fsm_state
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/proc_addr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {129685 ps} 0}
+WaveRestoreCursors {{Cursor 1} {46023902 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 604
 configure wave -valuecolwidth 178
@@ -79,4 +97,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {89687 ps} {346560 ps}
+WaveRestoreZoom {0 ps} {294051 ps}
