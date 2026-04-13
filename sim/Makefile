@@ -15,14 +15,21 @@ SHELL = bash
 
 DUT = tb_didactic
 
-# TB defines enable tb peripherals
+# By default use fastest available UART
 FAST_UART ?= 1
-UART_DEFINE = $(if $(filter 1,$(FAST_UART)),+define+SIM_FAST_UART,)
+SIM_UART_MODEL ?= 1
+
+UART_DEFINE        = $(if $(filter 1,$(FAST_UART)),+define+SIM_FAST_UART,)
+UART_MODEL_DEFINE  = $(if $(filter 1,$(SIM_UART_MODEL)),+define+SIM_UART_MODEL,)
+BYPASS_UART ?= 0
+BYPASS_UART_DEFINE = $(if $(filter 1,$(BYPASS_UART)),+define+BYPASS_UART,)
 
 TB_DEFINES = \
 	+define+USE_UART \
 	+define+USE_SPI \
-	$(UART_DEFINE)
+	$(UART_DEFINE) \
+	$(UART_MODEL_DEFINE) \
+	$(BYPASS_UART_DEFINE)
 
 # Dut defines:
 # * RVFi required by tracer
@@ -85,15 +92,30 @@ library_mapping:
 
 compile: env compile_didactic
 
+# SIM_UART_MODEL=1: replace apb_uart with fast behavioral model (no 16x oversampling).
+# Can be combined with FAST_UART=1 to also set matching TB bit timing.
+SIM_UART_MODEL ?= 0
+
 compile_didactic:
 	vlib $(BUILD_DIR)/didactic_lib
 	vmap didactic_lib $(BUILD_DIR)/didactic_lib
 	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(INCLUDES) $(DUT_LIBS) \
 	$(VLOG_OPTS) $(SIM_FLIST) -l $(BUILD_DIR)/logs/compile/$(START_TIME)_didactic.log
+ifeq ($(SIM_UART_MODEL),1)
+	@echo "[sim] Compiling fast behavioral UART model (overrides apb_uart)"
+	vlog -sv -work didactic_lib $(VLOG_OPTS) \
+	../src/tb/apb_uart_sim.sv
+endif
 
 SANITY_CHECK ?= 0
 TESTCASE ?= blink
 GUI ?= "-c"
+
+# +acc enables full signal visibility for GUI waveforms (adds overhead).
+# elaborate uses +acc (needed for $readmemh hierarchy path access).
+# elaborate_fast drops +acc for pure batch/regression runs.
+VOPT_OPTS_FAST = $(filter-out +acc,$(VOPT_OPTS))
+
 elaborate: library_mapping
 	cd $(BUILD_DIR)
 	vopt \
@@ -105,6 +127,22 @@ elaborate: library_mapping
 	-o $(DUT)_opt \
 	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_vopt.log
 
+elaborate_fast: library_mapping
+	cd $(BUILD_DIR)
+	vopt \
+	$(DUT_LIBS) $(VOPT_OPTS_FAST) \
+	-gDM_SANITY_TESTCASES=$(SANITY_CHECK) \
+	-gTESTCASE=$(TESTCASE) \
+	-work $(BUILD_DIR)/didactic_lib \
+	$(DUT) \
+	-o $(DUT)_opt \
+	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_vopt.log
+
+# DO_FILES: optional space-separated list of .do scripts to source before run.
+# Each file is passed as a separate -do "do <file>" argument.
+DO_FILES ?=
+DO_ARGS   = $(foreach f,$(DO_FILES),-do "do $(f)")
+
 run_sim: library_mapping
 	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
@@ -112,7 +150,8 @@ run_sim: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \
-	-do "run 0ms;" \
+	$(DO_ARGS) \
+	-do "run -all;" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log
 
 #============================================================

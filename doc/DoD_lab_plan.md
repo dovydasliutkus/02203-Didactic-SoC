@@ -22,7 +22,7 @@ The CPU controls the accelerator and performs the following steps:
 3. Poll the **DONE** bit in the CSR.
 4. When processing is complete (**DONE = 1**), send the processed image back via **UART**.
 
-On the FPGA, the image is sent from a PC over UART, processed by the SoC, and returned to the PC. The testbench mirrors this flow: it acts as the PC, sending the image over UART and receiving the result, which it then saves as a `.pgm` file for visual inspection.
+On the FPGA, the image will be sent from a PC over UART, processed by the SoC, and returned to the PC. The testbench mirrors this flow: it acts as the PC, sending the image over UART and receiving the result, which it then saves as a `.pgm` file for visual inspection.
 
 The generated `.pgm` file can be viewed using software such as **IrfanView** or any image viewer that supports the PGM format.
 
@@ -42,26 +42,47 @@ Draw a block diagram showing the datapath you have designed and develop an ASMD 
 
 Using your ASMD chart and block diagram, implement the edge detection accelerator in RTL. Write your code in `src/rtl/Student_area_0.sv`, replacing the pixel inversion logic from Task 0.
 
-To test your design, go to the `sim/` directory and run
+To test your design, run the following command from project root
 
 ```
-make sim_ss
+make test_ss
 ```
 
-This will run `src/tb/tb_student_ss.sv` which tests the standalone `Student_area_0` module. The testbench reads an input PGM (set by the `src_image` parameter), drives the accelerator via APB, and writes the processed result to a new PGM in `src/tb/out_images/`.
+This will run `src/tb/tb_student_ss.sv` testbench that simulates the standalone `Student_area_0` module. 
+
+The testbench reads an input PGM (set by the `src_image` parameter), drives the accelerator via an [APB](https://developer.arm.com/documentation/ihi0024/latest/) interface, and writes the processed result to a new PGM in `src/tb/out_images/`.
 
 This testbench is meant for verifying your edge detector design before system integration.
 
-TO BE REWORKED
----
+
 ### 2.  Integrate the Accelerator into the SoC
 
-Once your RTL design works correctly with the standalone testbench, integrate the accelerator into the Didactic-SoC.
+Once your RTL design works correctly with the standalone testbench, you may test the design with the entire system.
 
-Use the pixel inversion accelerator from Task 0 as a reference for how the accelerator connects to the system.
+The testbench can be found in `src/tb/tb_didactic_V1.sv`. The simulation is mean to replicate the real test that will be done on FPGA with UART coming from a PC. 
 
-You may also need to modify the CPU software to control your new accelerator.
+The testbench simulates this PC side UART tranceiver. To facilitate UART transactions the testbench implements two tasks: `uart_write_byte` and `uart_receive_byte`. 
 
+Note 1: Instead of the real UART peripheral for the Didactic-SoC a simplified model is used to speed up simulation.
+Note 2: The processed image is generated straight from the accelerator output buffer to save simulation time for writing the image back to the testbench over UART.
+
+First you will need to build the C code to produce a .hex file that can be used to initialize the instruction memory of the CPU.
+```
+make build_test TEST=pixel_inversion
+```
+For curiosity or debugging purposes you may look at the assembly dump in `build/sw/pixel_inversion.asm`.
+
+To run the full Didactic-SoC simulation 
+```
+make test_all TEST=pixel_inversion BYPASS_UART=1
+``` 
+To run with GUI
+```
+make test_all_gui TEST=pixel_inversion BYPASS_UART=1
+```
+
+---
+DOCUMENT TO BE REWORKED BELOW
 ---
 
 ### 3.  FPGA Testing

@@ -57,6 +57,10 @@ compile: check-env
 elaborate: check-env
 	$(MAKE) -C sim elaborate BUILD_DIR=$(BUILD_DIR) TESTCASE=$(TEST)
 
+# No signal logging for faster simulation without gui
+elaborate_fast: check-env
+	$(MAKE) -C sim elaborate_fast BUILD_DIR=$(BUILD_DIR) TESTCASE=$(TEST)
+
 # Potentionally split this to multiple subtasks
 syn: check-env
 	$(MAKE) -C syn synthesize BUILD_DIR=$(BUILD_DIR)
@@ -80,7 +84,13 @@ build_test: check-env
 # full flow targets
 ######################################################################
 
-test_all: check-env compile elaborate build_test run_sim
+test_all: check-env compile elaborate_fast build_test run_sim
+
+test_all_gui: check-env compile elaborate build_test
+	$(MAKE) -C sim run_sim BUILD_DIR=$(BUILD_DIR) GUI="" DO_FILES="../sim/wave.do ../sim/mem.do"
+
+test_ss: check-env
+	$(MAKE) -C sim sim_ss BUILD_DIR=$(BUILD_DIR)
 
 ######################################################################
 # fpga targets

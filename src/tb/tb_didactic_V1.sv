@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+`timescale 1ns/1ns
 
 module tb_didactic;
 
@@ -15,12 +15,19 @@ localparam int FRAME_HEIGHT = 288;
 localparam int TOTAL_PIXELS = FRAME_WIDTH * FRAME_HEIGHT;
 
 // UART bit period:
-//   SIM_FAST_UART: divisor=2  → 100 MHz / (16×2) = 3.125 Mbaud → 320 ns/bit
-//   default:       divisor=27 → ~230400 baud                    → 4340 ns/bit
-`ifdef SIM_FAST_UART
-  localparam real UART_BIT_NS = 320.0;  // divisor=2 → 100 MHz / (16×2) = 3.125 Mbaud
+//   SIM_UART_MODEL + SIM_FAST_UART: behavioral model, divisor=2, no 16x → 20 ns/bit
+//   SIM_FAST_UART only:             real UART 16750, divisor=2           → 320 ns/bit
+//   default:                        real UART 16750, divisor=27          → 4340 ns/bit
+`ifdef SIM_UART_MODEL
+  `ifdef SIM_FAST_UART
+    localparam real UART_BIT_NS = 20.0;   // divisor=2, 1x sampling → 2 clk/bit
+  `else
+    localparam real UART_BIT_NS = 270.0;  // divisor=27, 1x sampling → 27 clk/bit
+  `endif
+`elsif SIM_FAST_UART
+  localparam real UART_BIT_NS = 320.0;    // real UART, divisor=2, 16x → 32 clk/bit
 `else
-  localparam real UART_BIT_NS = 4340.0;
+  localparam real UART_BIT_NS = 4340.0;   // real UART, divisor=27, 16x → 432 clk/bit
 `endif
 
 // ----------------------------------------------------------------
@@ -108,9 +115,10 @@ logic [7:0] pixels_out [0:TOTAL_PIXELS-1];
 // ----------------------------------------------------------------
 // Main test
 // ----------------------------------------------------------------
-integer fd, i;
-integer tmp_val;
-string  hdr_str, out_path;
+integer  fd, i;
+integer  tmp_val;
+string   hdr_str, out_path;
+logic [31:0] obuf_word;
 
 initial begin
     // ----------------------------------------------------------
@@ -145,25 +153,60 @@ initial begin
     reset = 1'b1;
     $display("[TB] Reset released");
 
+`ifdef BYPASS_UART
+    // ----------------------------------------------------------
+    // BYPASS_UART: load ibuf directly, write CSR_DATA_READY by force.
+    // CPU is still running but UART transfer is skipped entirely.
+    // Use this for fast waveform debugging of the accelerator only.
+    // ----------------------------------------------------------
+    $display("[TB] BYPASS_UART: loading ibufy directly...");
+    for (i = 0; i < TOTAL_PIXELS / 4; i++) begin
+        force tb_didactic.i_didactic.Student_SS_0.Student_area_0.ibuf[i] =
+            {pixels_in[i*4+3], pixels_in[i*4+2], pixels_in[i*4+1], pixels_in[i*4+0]};
+    end
+    @(posedge clk);
+    for (i = 0; i < TOTAL_PIXELS / 4; i++)
+        release tb_didactic.i_didactic.Student_SS_0.Student_area_0.ibuf[i];
+
+    $display("[TB] ibuf loaded, triggering accelerator...");
+    // Set csr_data_ready directly so FSM starts without APB write from CPU
+    force tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_data_ready = 1'b1;
+    @(posedge clk);
+    release tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_data_ready;
+`else
+    // ----------------------------------------------------------
+    // Normal flow: wait for CPU boot, send image via UART
+    // ----------------------------------------------------------
     // Wait for CPU to boot and initialise UART
     #2500;
 
-    // ----------------------------------------------------------
-    // Send image pixels to CPU via UART (raw bytes)
-    // ----------------------------------------------------------
     $display("[TB] Sending image via UART...");
     for (i = 0; i < TOTAL_PIXELS; i++) begin
         uart_send_byte(pixels_in[i]);
-        $display("[TB] Sent %0d / %0d bytes", i, TOTAL_PIXELS);
+        if (i % 100 == 0) $display("[TB] Sent %0d / %0d bytes @ %0t ns", i, TOTAL_PIXELS, $time);
     end
     $display("[TB] Image sent, waiting for result...");
+`endif
 
     // ----------------------------------------------------------
-    // Receive processed image from CPU via UART
+    // Wait for accelerator DONE flag
     // ----------------------------------------------------------
-    for (i = 0; i < TOTAL_PIXELS; i++)
-        uart_recv_byte(pixels_out[i]);
-    $display("[TB] Result received");
+    $display("[TB] Waiting for accelerator DONE...");
+    wait(tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_done === 1'b1);
+    @(posedge clk);  // one extra cycle so last obuf write is settled
+    $display("[TB] Accelerator done @ %0t ns", $time);
+
+    // ----------------------------------------------------------
+    // Read output directly from accelerator obuf (no UART TX needed)
+    // ----------------------------------------------------------
+    for (i = 0; i < TOTAL_PIXELS / 4; i++) begin
+        obuf_word = tb_didactic.i_didactic.Student_SS_0.Student_area_0.obuf[i];
+        pixels_out[i*4+0] = obuf_word[7:0];
+        pixels_out[i*4+1] = obuf_word[15:8];
+        pixels_out[i*4+2] = obuf_word[23:16];
+        pixels_out[i*4+3] = obuf_word[31:24];
+    end
+    $display("[TB] Result read from obuf");
 
     // ----------------------------------------------------------
     // Write output PGM (P2 ASCII, one value per line)

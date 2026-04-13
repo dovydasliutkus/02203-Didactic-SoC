@@ -5,6 +5,8 @@
 
 [feature] To simulate picture loading from PC `tb_didactic_V1.sv` has two modes for UART. The modes are controlled by `FAST_UART` variable in Makefiles. When the variable is set the minimum clock divisor of 2 is used to maximise simulation speed. `FAST_UART` can also be set to 0 for more realistic 230400 baudrate @ 100MHz sys clk.
 
+[question] Will the students be able to adjust C code for optimizing their accelerator if they didn't have a smaller task with that?
+
 ## TODO
 - What simulator will the students use? ModelSim or free questa? Questa Starter Edition runs the scripts
 
@@ -69,3 +71,8 @@ The processed pgm will be generated straight from the accelerator output buffer.
 ### Did
 - blinky works with new - simplified - testbench. 
 - The testbench UART write is successfully transfered to `Student_area_0.IBUF`. (Fast and Slow UART both work)
+- Replaced UART with a simplified model that doesn't do x16 oversampling which significantly sped up the simulation, enabled by default in Make.
+- To debug the ACC implemented UART bypass controled by `UART_BYPASS` variable from Make.
+
+### Next
+- Last word of ibuf is unknown figure out why

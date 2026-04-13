@@ -82,14 +82,14 @@ int main(void)
     while (!(*ACCEL_CSR & CSR_DONE)) {}
 
     /* Send processed pixels back over UART, byte by byte. */
-    *ACCEL_OBUF_ADDR = 0u;
-    for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
-        uint32_t word = *ACCEL_OBUF_DATA;
-        uart_write_byte((uint8_t)(word        & 0xFFu));
-        uart_write_byte((uint8_t)((word >>  8) & 0xFFu));
-        uart_write_byte((uint8_t)((word >> 16) & 0xFFu));
-        uart_write_byte((uint8_t)((word >> 24) & 0xFFu));
-    }
-
-    while (1) {}  /* prevent undefined behaviour from crt0 changeStack */
+    // *ACCEL_OBUF_ADDR = 0u;
+    // for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
+    //     uint32_t word = *ACCEL_OBUF_DATA;
+    //     uart_write_byte((uint8_t)(word        & 0xFFu));
+    //     uart_write_byte((uint8_t)((word >>  8) & 0xFFu));
+    //     uart_write_byte((uint8_t)((word >> 16) & 0xFFu));
+    //     uart_write_byte((uint8_t)((word >> 24) & 0xFFu));
+    // }
+    
+    return 0;
 }
