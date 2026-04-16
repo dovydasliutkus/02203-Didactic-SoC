@@ -10,6 +10,10 @@
 FAST_UART ?= 1
 UART_FLAG = $(if $(filter 1,$(FAST_UART)),-DSIM_FAST_UART,)
 
+# Set BYPASS_UART=1 to skip the UART receive loop (ibuf pre-loaded by testbench)
+BYPASS_UART ?= 0
+BYPASS_FLAG = $(if $(filter 1,$(BYPASS_UART)),-DBYPASS_UART,)
+
 TESTCASE ?= blink
 START_TIME=`date +%F_%H:%M`
 SHELL = bash
@@ -18,7 +22,7 @@ XLEN ?= 32
 PREFIX ?= riscv$(XLEN)-unknown-elf
 ARCH_FLAGS ?= -march=rv32imc -mabi=ilp32
 CC=$(PREFIX)-gcc
-CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ $(UART_FLAG)
+CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ $(UART_FLAG) $(BYPASS_FLAG)
 OBJDUMP ?= $(PREFIX)-objdump
 OBJCOPY ?= $(PREFIX)-objcopy
 

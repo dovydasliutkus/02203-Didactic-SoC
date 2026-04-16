@@ -5,6 +5,11 @@ This laboratory exercise extends the existing image processing accelerator lab b
 
 The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, hardware–software co-design.
 
+## Software requirements
+1. Questa Starter Edition [Link to download](https://www.altera.com/downloads/simulation-tools/questa-fpgas-standard-edition-software-version-25-1).
+2. riscv32-unknown-elf toolchain
+3. Vivado
+4. (Optional) OpenOCD for JTAG debugging
 
 ## Tasks
 ### 0.  Test the Didactic-SoC with a Working Example
@@ -74,12 +79,15 @@ For curiosity or debugging purposes you may look at the assembly dump in `build/
 
 To run the full Didactic-SoC simulation 
 ```
-make test_all TEST=pixel_inversion BYPASS_UART=1
+make test_all TEST=pixel_inversion 
 ``` 
 To run with GUI
 ```
-make test_all_gui TEST=pixel_inversion BYPASS_UART=1
+make test_all_gui TEST=pixel_inversion 
 ```
+This simulation will take about x mins in batch mode and y mins with GUI mode. 
+
+Even though a simplified model of UART is used, it takes 20 cycles to send 1 byte (2 cycles per bit, but also have to include start and stop bits). And the test needs to move 101376 bytes (352x288). Which equates to 101376x20 = 2.03e6 cycles. With each cycle taking 10ns (100MHz). The test should take 20.3 ms of simulation time.
 
 ---
 DOCUMENT TO BE REWORKED BELOW
@@ -96,10 +104,9 @@ Synthesize and implement the design using **Vivado**. If synthesis errors occur,
 To test the system you will send an image from your computer to the Didactic-SoC and get the processed image back. More precise steps are:
 
 1. A computer sends an image to the FPGA via UART.
-2. The CPU stores the received image in DMEM.
-3. The CPU transfers the image to the accelerator.
-4. The accelerator processes the image.
-5. The CPU sends the processed image back to the PC through UART.
+2. The CPU forwards the pixel data to accelerator IBUF.
+3. The accelerator processes the image.
+4. The CPU sends the processed image back to the PC through UART.
 
 #### Provided Code
 

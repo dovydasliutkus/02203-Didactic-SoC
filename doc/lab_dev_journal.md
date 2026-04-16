@@ -75,4 +75,5 @@ The processed pgm will be generated straight from the accelerator output buffer.
 - To debug the ACC implemented UART bypass controled by `UART_BYPASS` variable from Make.
 
 ### Next
-- Last word of ibuf is unknown figure out why
+- Fix of by one error in `UART_BYPASS` mode. This works - generates images with inverted pixels.
+- Tested `SIM_UART_MODEL` with `FAST_UART` enabled. In batch mode.

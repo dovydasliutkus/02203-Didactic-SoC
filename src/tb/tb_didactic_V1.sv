@@ -2,9 +2,11 @@
 
 module tb_didactic;
 
-// ----------------------------------------------------------------
+initial
+//shall print %t with scaled in ns (-9), with 2 precision digits, and would print the " ns" string
+  $timeformat(-9, 2, " ns", 20);
+
 // Parameters
-// ----------------------------------------------------------------
 parameter string TESTCASE     = "blink";  // hex loaded from: ../build/sw/<TESTCASE>.hex
 parameter string SRC_IMAGE    = "kaleidoscope.pgm";
 parameter string SRC_IMG_PATH = "../src/tb/src_images/";
@@ -15,7 +17,7 @@ localparam int FRAME_HEIGHT = 288;
 localparam int TOTAL_PIXELS = FRAME_WIDTH * FRAME_HEIGHT;
 
 // UART bit period:
-//   SIM_UART_MODEL + SIM_FAST_UART: behavioral model, divisor=2, no 16x → 20 ns/bit
+//   SIM_UART_MODEL + SIM_FAST_UART: behavioral model, divisor=2, no 16x  → 20 ns/bit
 //   SIM_FAST_UART only:             real UART 16750, divisor=2           → 320 ns/bit
 //   default:                        real UART 16750, divisor=27          → 4340 ns/bit
 `ifdef SIM_UART_MODEL
@@ -106,9 +108,7 @@ task automatic uart_recv_byte(output logic [7:0] data);
     #(UART_BIT_NS * 1ns);                    // consume stop bit
 endtask
 
-// ----------------------------------------------------------------
 // Image buffers
-// ----------------------------------------------------------------
 logic [7:0] pixels_in  [0:TOTAL_PIXELS-1];
 logic [7:0] pixels_out [0:TOTAL_PIXELS-1];
 
@@ -128,7 +128,7 @@ initial begin
     $display("[TB] IMEM loaded from ../build/sw/%s.hex", TESTCASE);
 
     // ----------------------------------------------------------
-    // Read input PGM (P2 ASCII: magic / comment / dims / maxval)
+    // Read input PGM (P2 ASCII)
     // ----------------------------------------------------------
     fd = $fopen({SRC_IMG_PATH, SRC_IMAGE}, "r");
     if (fd == 0)
@@ -155,24 +155,23 @@ initial begin
 
 `ifdef BYPASS_UART
     // ----------------------------------------------------------
-    // BYPASS_UART: load ibuf directly, write CSR_DATA_READY by force.
-    // CPU is still running but UART transfer is skipped entirely.
-    // Use this for fast waveform debugging of the accelerator only.
+    // BYPASS_UART: pre-load ibuf directly then let the CPU run.
+    // The firmware is compiled with -DBYPASS_UART so it skips the
+    // UART receive loop and goes straight to writing CSR_DATA_READY.
+    // This exercises the full firmware CSR path without the serial link.
     // ----------------------------------------------------------
-    $display("[TB] BYPASS_UART: loading ibufy directly...");
-    for (i = 0; i < TOTAL_PIXELS / 4; i++) begin
+    $display("[TB] BYPASS_UART: pre-loading ibuf directly...");
+    for (i = 0; i < TOTAL_PIXELS /4 + 1; i++) begin
         force tb_didactic.i_didactic.Student_SS_0.Student_area_0.ibuf[i] =
             {pixels_in[i*4+3], pixels_in[i*4+2], pixels_in[i*4+1], pixels_in[i*4+0]};
     end
-    @(posedge clk);
-    for (i = 0; i < TOTAL_PIXELS / 4; i++)
-        release tb_didactic.i_didactic.Student_SS_0.Student_area_0.ibuf[i];
 
-    $display("[TB] ibuf loaded, triggering accelerator...");
-    // Set csr_data_ready directly so FSM starts without APB write from CPU
-    force tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_data_ready = 1'b1;
+    #2500;  // wait for CPU boot
+
     @(posedge clk);
-    release tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_data_ready;
+    for (i = 0; i < TOTAL_PIXELS/4 + 1; i++)
+        release tb_didactic.i_didactic.Student_SS_0.Student_area_0.ibuf[i];
+    $display("[TB] ibuf pre-loaded, waiting for CPU to write CSR_DATA_READY...");
 `else
     // ----------------------------------------------------------
     // Normal flow: wait for CPU boot, send image via UART
@@ -181,9 +180,9 @@ initial begin
     #2500;
 
     $display("[TB] Sending image via UART...");
-    for (i = 0; i < TOTAL_PIXELS; i++) begin
+    for (i = 0; i < TOTAL_PIXELS + 1; i++) begin
         uart_send_byte(pixels_in[i]);
-        if (i % 100 == 0) $display("[TB] Sent %0d / %0d bytes @ %0t ns", i, TOTAL_PIXELS, $time);
+        if (i % 1000 == 0) $display("[TB] Sent %0d / %0d bytes @ %0t", i, TOTAL_PIXELS, $time, $realtime / 1_000_000.0);
     end
     $display("[TB] Image sent, waiting for result...");
 `endif
