@@ -72,11 +72,10 @@ int main(void)
      * write directly into ibuf — no DMEM buffering needed. */
     *ACCEL_IBUF_ADDR = 0u;
     for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
-        // uint32_t word = (uint32_t)uart_read_byte()
-        //               | ((uint32_t)uart_read_byte() <<  8)
-        //               | ((uint32_t)uart_read_byte() << 16)
-        //               | ((uint32_t)uart_read_byte() << 24);
-        uint32_t word = i;
+         uint32_t word = (uint32_t)uart_read_byte()
+                       | ((uint32_t)uart_read_byte() <<  8)
+                       | ((uint32_t)uart_read_byte() << 16)
+                       | ((uint32_t)uart_read_byte() << 24);
         *ACCEL_IBUF_DATA = word;
     }
 #endif /* BYPASS_UART: ibuf pre-loaded by testbench */

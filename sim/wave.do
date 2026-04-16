@@ -45,13 +45,13 @@ add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wr
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_rdata_intg_i
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/i_ibex_wrapper/Ibex_Core/u_ibex_top/data_err_i
 add wave -noupdate -divider UART
-add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iSIN
-add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iSINr
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/SIN
-add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iLSR_DR
-add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/iRXFIFOWrite
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/CLK
 add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/RSTN
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/rbr
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/divisor
+add wave -noupdate -radix binary /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/rx_shift
+add wave -noupdate /tb_didactic/i_didactic/SystemControl_SS/SysCtrl_SS/apb_uart/rx_state
 TreeUpdate [SetDefaultTree]
 quietly WaveActivateNextPane
 add wave -noupdate -divider Student_area_0
@@ -81,10 +81,10 @@ add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/obuf_radd
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/fsm_state
 add wave -noupdate /tb_didactic/i_didactic/Student_SS_0/Student_area_0/proc_addr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {46023902 ps} 0}
+WaveRestoreCursors {{Cursor 1} {2596024 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 604
-configure wave -valuecolwidth 178
+configure wave -valuecolwidth 229
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
 configure wave -snapdistance 10
@@ -97,4 +97,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {294051 ps}
+WaveRestoreZoom {2559033 ps} {3023623 ps}

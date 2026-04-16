@@ -8,7 +8,7 @@ initial
 
 // Parameters
 parameter string TESTCASE     = "blink";  // hex loaded from: ../build/sw/<TESTCASE>.hex
-parameter string SRC_IMAGE    = "kaleidoscope.pgm";
+parameter string SRC_IMAGE    = "pattern.pgm";
 parameter string SRC_IMG_PATH = "../src/tb/src_images/";
 parameter string OUT_IMG_PATH = "../src/tb/out_images/";
 
@@ -180,9 +180,9 @@ initial begin
     #2500;
 
     $display("[TB] Sending image via UART...");
-    for (i = 0; i < TOTAL_PIXELS + 1; i++) begin
+    for (i = 0; i < TOTAL_PIXELS; i++) begin
         uart_send_byte(pixels_in[i]);
-        if (i % 1000 == 0) $display("[TB] Sent %0d / %0d bytes @ %0t", i, TOTAL_PIXELS, $time, $realtime / 1_000_000.0);
+        if (i % 1000 == 0) $display("[TB] Sent %0d / %0d bytes @ %0t", i, TOTAL_PIXELS, $time);
     end
     $display("[TB] Image sent, waiting for result...");
 `endif
@@ -191,6 +191,7 @@ initial begin
     // Wait for accelerator DONE flag
     // ----------------------------------------------------------
     $display("[TB] Waiting for accelerator DONE...");
+    
     wait(tb_didactic.i_didactic.Student_SS_0.Student_area_0.csr_done === 1'b1);
     @(posedge clk);  // one extra cycle so last obuf write is settled
     $display("[TB] Accelerator done @ %0t ns", $time);
@@ -208,7 +209,7 @@ initial begin
     $display("[TB] Result read from obuf");
 
     // ----------------------------------------------------------
-    // Write output PGM (P2 ASCII, one value per line)
+    // Write output PGM (P2 ASCII)
     // ----------------------------------------------------------
     out_path = {OUT_IMG_PATH, SRC_IMAGE.substr(0, SRC_IMAGE.len()-5), "_result.pgm"};
     fd = $fopen(out_path, "w");
