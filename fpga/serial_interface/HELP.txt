@@ -1,0 +1,54 @@
+Serial interface help
+
+-Purpose
+This application allows the download and the upload of a
+P2-type PGM image of size 352x288 pixels using the serial
+port.
+
+-Usage
+The application is divided into 3 section: 1) Setup serial
+connection to the FPGA board, 2) Download image to the
+FPGA board, and 3) Upload image from the FPGA board. The
+functionality of these three sections is explained in
+the following.
+
+1) Setup serial connection to the FPGA board:
+In this section you can setup the connection to the FPGA
+board. The FPGA board needs to be connected and the FPGA
+needs to be configured in order for the application be
+able to interact with the serial port.
+
+All the serial ports are listed in the drop-menu at the
+top of this section. By pressing the button 'Refresh list'
+you can update the entries of the list in case you connect
+new devices.
+
+Once you have selected the serial port of your board you
+can test if the FPGA board is connected to the selected
+serial port by pressing the button 'Test port'.
+
+By pressing the button 'Clear entire memory content' you
+can clear the entire FPGA board memory content (reset all
+entries to 0).
+
+2) Download image to the FPGA board:
+In this section you can open a PGM image by pressing the
+button 'Open...' and download it to the FPGA board by
+pressing the button 'Download image'. The download takes
+about 7 seconds and the status is shown in the progress
+bar.
+
+By pressing the button 'Show image', you can see a preview
+of the download image. The button 'Reset' of this section
+resets only this section of the application.
+
+3) Upload image from the FPGA board:
+In this section you can upload a PGM image form the FPGA
+board by pressing the button 'Upload image' and save it to
+a file by pressing the button 'Save...'. The upload takes
+about 7 seconds and the status is shown in the progress
+bar.
+
+By pressing the button 'Show image', you can see a preview
+of the uploaded image. The button 'Reset' of this section
+resets only this section of the application.

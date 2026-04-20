@@ -138,11 +138,6 @@ elaborate_fast: library_mapping
 	-o $(DUT)_opt \
 	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_vopt.log
 
-# DO_FILES: optional space-separated list of .do scripts to source before run.
-# Each file is passed as a separate -do "do <file>" argument.
-DO_FILES ?=
-DO_ARGS   = $(foreach f,$(DO_FILES),-do "do $(f)")
-
 run_sim: library_mapping
 	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
@@ -150,7 +145,6 @@ run_sim: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \
-	$(DO_ARGS) \
 	-do "run -all;" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log
 
@@ -182,7 +176,7 @@ run_ss: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(SS_TB)_opt \
-	-do "run -all;" \
+	-do "do wave_ss.do; run -all;" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_ss_sim.log
 
 sim_ss: compile_ss elaborate_ss run_ss

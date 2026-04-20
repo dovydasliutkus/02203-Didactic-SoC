@@ -85,9 +85,10 @@ To run with GUI
 ```
 make test_all_gui TEST=pixel_inversion 
 ```
-This simulation will take about x mins in batch mode and y mins with GUI mode. 
+This simulation will take about 18 mins in batch mode and more with GUI mode. 
 
 Even though a simplified model of UART is used, it takes 20 cycles to send 1 byte (2 cycles per bit, but also have to include start and stop bits). And the test needs to move 101376 bytes (352x288). Which equates to 101376x20 = 2.03e6 cycles. With each cycle taking 10ns (100MHz). The test should take 20.3 ms of simulation time.
+With the starter edition of questa on an Ubuntu laptop it took 18 minutes in batch mode.
 
 ---
 DOCUMENT TO BE REWORKED BELOW
@@ -97,7 +98,11 @@ DOCUMENT TO BE REWORKED BELOW
 
 Finally, test the complete system on the FPGA.
 
-Synthesize and implement the design using **Vivado**. If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
+Synthesize and implement the design using **Vivado**. By running
+```
+make fpga PROJECT=nexys_a7 TEST=pixel_inversion
+```
+If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
 
 #### FPGA Demonstration Setup
 

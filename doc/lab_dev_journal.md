@@ -8,7 +8,8 @@
 [question] Will the students be able to adjust C code for optimizing their accelerator if they didn't have a smaller task with that?
 
 ## TODO
-- What simulator will the students use? ModelSim or free questa? Questa Starter Edition runs the scripts
+- Write a plan for the PC side application that will upload an image via UART.
+- Run implementation for the Didactic-SoC 1.1 with the student subsystem
 
 
 ---
@@ -75,5 +76,13 @@ The processed pgm will be generated straight from the accelerator output buffer.
 - To debug the ACC implemented UART bypass controled by `UART_BYPASS` variable from Make.
 
 ### Next
-- Fix of by one error in `UART_BYPASS` mode. This works - generates images with inverted pixels.
-- Tested `SIM_UART_MODEL` with `FAST_UART` enabled. In batch mode.
+- Fix of by one error in `UART_BYPASS` mode. 
+
+## 2026-04-16
+- `UART_BYPASS` working, an image with inverted pixels is generated.
+- Tested `SIM_UART_MODEL` with `FAST_UART` enabled. In batch mode, with Questa Starter took 18mins.
+
+
+## 2026-04-20
+### Did
+- Successfully implemented for Nexys 7 with `make fpga PROJECT=nexys_a7 TEST=pixel_inversion`
