@@ -5,7 +5,7 @@
 #   -Matti Käyrä (matti.kayra@tuni.fi)
 ###
 
-TESTCASE ?= blinky
+TESTCASE ?= blink
 START_TIME=`date +%F_%H:%M`
 SHELL = bash
 BUILD_DIR ?= ../../build/fpga

@@ -8,9 +8,8 @@
 [question] Will the students be able to adjust C code for optimizing their accelerator if they didn't have a smaller task with that?
 
 ## TODO
-- Write a plan for the PC side application that will upload an image via UART.
-- Run implementation for the Didactic-SoC 1.1 with the student subsystem
-
+- Try Luca's serial_interface application for uploading to FPGA
+- make for sw can be run from sw/ or fpga/sw/ think of a cleaner way maybe. For blinky it makes sense to have seperate sw, maybe for pixel_inversion will be the same.
 
 ---
 
@@ -85,4 +84,18 @@ The processed pgm will be generated straight from the accelerator output buffer.
 
 ## 2026-04-20
 ### Did
-- Successfully implemented for Nexys 7 with `make fpga PROJECT=nexys_a7 TEST=pixel_inversion`
+- Successfully implemented for Nexys 7 with `make fpga PROJECT=nexys_a7 TEST=pixel_inversion` for the bram-ss branch
+
+### Problem 1
+BRAM buffers will make it complicated for students because they act as memories. LUT RAM cannot be used because the buffers are too big
+```
+ERROR: [DRC UTLZ-1] Resource utilization: LUT as Distributed RAM over-utilized in Top Level Design (This design requires more LUT as Distributed RAM cells than are available in the target device. This design requires 43040 of such cell types but only 19000 compatible sites are available in the target device.
+```
+Also tried to do only `ibuf` as LUT RAM but it was still too big.
+
+### Solution 1
+Use BRAM for both `ibuf` and `obuf`
+
+## 2026-04-23
+### Did
+- 

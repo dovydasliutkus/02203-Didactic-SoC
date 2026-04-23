@@ -1,5 +1,5 @@
 /*
- * Name: blinky.c
+ * Name: blink.c
  * Contributor(s):
  *    - Arto Oinonen (arto.oinonen@tuni.fi)
  *    - Matti Käyrä (matti.kayra@tuni.fi)

@@ -8,7 +8,7 @@
 SHELL = bash
 VIVADO ?= vivado
 
-TEST ?= blinky
+TEST ?= blink
 
 export BUILD_DIR ?= ../build
 export PROJECT ?= z1
@@ -24,5 +24,10 @@ all_xilinx_gui: check_env
 	cd $(BUILD_DIR)
 	$(VIVADO) -mode gui -source ../fpga/scripts/run_xilinx.tcl &
 
+# Build software
+build_test: check_env
+	$(MAKE) -C sw test BUILD_DIR=../../build/fpga TESTCASE=$(TEST)
+
+# Launch GDB and upload
 load_elf: check_env
 	riscv32-unknown-elf-gdb $(BUILD_DIR)/fpga/sw/$(TEST).elf -x ../fpga/utils/connect-and-load.gdb

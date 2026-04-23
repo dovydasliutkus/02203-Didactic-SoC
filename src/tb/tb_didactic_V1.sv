@@ -40,9 +40,9 @@ logic reset = 1'b0;
 always #5 clk = ~clk;  // 100 MHz
 
 // ----------------------------------------------------------------
-// DUT wiring — inout ports require tri/wire intermediaries
+// DUT wiring - inout ports require tri/wire intermediaries
 // ----------------------------------------------------------------
-logic tb_uart_tx = 1'b1;   // TB → DUT (idle high)
+logic tb_uart_tx = 1'b1;   // TB -> DUT (idle high)
 
 tri0  dut_clk;
 tri0  dut_reset;
@@ -53,7 +53,7 @@ assign dut_clk     = clk;
 assign dut_reset   = reset;
 assign dut_uart_rx = tb_uart_tx;
 
-// SPI / GPIO / JTAG — tied off
+// SPI, GPIO, JTAG - tied off
 tri1  dut_spi_csn0, dut_spi_csn1;
 tri0  dut_spi_sck;
 tri1  dut_spi_data0, dut_spi_data1, dut_spi_data2, dut_spi_data3;
@@ -200,7 +200,7 @@ initial begin
     // Read output directly from accelerator obuf (no UART TX needed)
     // ----------------------------------------------------------
     for (i = 0; i < TOTAL_PIXELS / 4; i++) begin
-        obuf_word = tb_didactic.i_didactic.Student_SS_0.Student_area_0.obuf[i];
+        obuf_word = tb_didactic.i_didactic.Student_SS_0.Student_area_0.obuf.mem[i];
         pixels_out[i*4+0] = obuf_word[7:0];
         pixels_out[i*4+1] = obuf_word[15:8];
         pixels_out[i*4+2] = obuf_word[23:16];

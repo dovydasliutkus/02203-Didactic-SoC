@@ -87,7 +87,7 @@ build_test: check-env
 test_all: check-env compile elaborate_fast build_test run_sim
 
 test_all_gui: check-env compile elaborate build_test
-	$(MAKE) -C sim run_sim BUILD_DIR=$(BUILD_DIR) GUI="" DO_FILES="../sim/wave.do ../sim/mem.do"
+	$(MAKE) -C sim run_sim BUILD_DIR=$(BUILD_DIR) GUI=""
 
 test_ss: check-env
 	$(MAKE) -C sim sim_ss BUILD_DIR=$(BUILD_DIR)

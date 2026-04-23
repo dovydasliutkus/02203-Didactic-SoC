@@ -114,7 +114,7 @@ logic [31:0] pixel_out;
 // ============================================================
 // BRAM instances
 // ============================================================
-bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) i_ibuf (
+bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) ibuf (
     .clk     (clk_in),
     .wr_en   (ibuf_wr_en),
     .wr_addr (ibuf_wr_addr),
@@ -124,7 +124,7 @@ bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) i_ibuf (
     .rd_data (ibuf_rd_data)
 );
 
-bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) i_obuf (
+bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) obuf (
     .clk     (clk_in),
     .wr_en   (obuf_wr_en),
     .wr_addr (obuf_wr_addr),
@@ -164,7 +164,7 @@ end
 // ============================================================
 // APB register file + FSM  (synchronous reset)
 // ============================================================
-always_ff @(posedge clk_in) begin
+always_ff @(posedge clk_in or negedge rst) begin
     if (~rst) begin
         PREADY         <= 1'b0;
         PSLVERR        <= 1'b0;
@@ -302,7 +302,8 @@ module bram_sdp #(
     output logic [DATA_WIDTH-1:0] rd_data
 );
 
-    (* ram_style = "block" *) logic [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+    // (* ram_style = "block" *) logic [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+    logic [DATA_WIDTH-1:0] mem [0:DEPTH-1];
 
     always_ff @(posedge clk) begin
         if (wr_en)

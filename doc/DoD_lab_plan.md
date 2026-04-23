@@ -104,6 +104,23 @@ make fpga PROJECT=nexys_a7 TEST=pixel_inversion
 ```
 If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
 
+Compile the code for fpga with the following make target from `fpga/`
+
+```
+make build_test TEST=pixel_inversion
+```
+
+To upload code to the CPU in the Didactic-SoC first we need to start an OpenOCD server. OpenOCD acts as a bridge between GNU debugger (GDB) and physical JTAG protocol.
+
+```
+openocd -f fpga/utils/openocd-didactic-nexys.cfg
+```
+
+To upload the code 
+Then from `fpga/` upload the program with
+```
+make load_elf TEST=pixel_inversion
+```
 #### FPGA Demonstration Setup
 
 To test the system you will send an image from your computer to the Didactic-SoC and get the processed image back. More precise steps are:
