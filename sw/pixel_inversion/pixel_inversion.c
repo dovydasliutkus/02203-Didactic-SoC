@@ -5,7 +5,7 @@
  *   - Drives the Student_area_0 pixel-inversion accelerator.
  *   - Receives image pixels from UART, writes to ibuf, triggers processing,
  *     polls for completion.
- *   - Sends processed pixels back over UART
+ *   - Sends processed pixels back over UART (currently disabled for faster simulation)
  */
 
 #include <stdint.h>

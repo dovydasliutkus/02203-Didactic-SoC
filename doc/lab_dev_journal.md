@@ -14,6 +14,9 @@
 - mem init with bitstream (openocd will be hard on windows) but leave jtag as an option
 - cleanup Student_area sv
 - finalize lab description
+(FINISHING)
+-  Delete all redundant code like the BYPASS_UART and FAST_UART ifdef statements
+- If not using bender create files.f for simulation and fpga implementation. Also ship the repo with all dependencies.
 
 ---
 
@@ -104,3 +107,4 @@ Use BRAM for both `ibuf` and `obuf`
 ### Did
 - hello.c works on FPGA
 - pixel_inversion.c works with the python GUI on FPGA.
+- Added TODOs in the lab guide.
