@@ -16,3 +16,4 @@ vendor_ips
 Bender.lock
 
 src/tb/out_images/*
+fpga/serial_interface/ser_venv/

@@ -7,9 +7,13 @@
 
 [question] Will the students be able to adjust C code for optimizing their accelerator if they didn't have a smaller task with that?
 
+[sw:risk] Setting baudrate for UART need to check if it can be divided in a clean way from the system frequency.
+
 ## TODO
-- Try Luca's serial_interface application for uploading to FPGA
 - make for sw can be run from sw/ or fpga/sw/ think of a cleaner way maybe. For blinky it makes sense to have seperate sw, maybe for pixel_inversion will be the same.
+- mem init with bitstream (openocd will be hard on windows) but leave jtag as an option
+- cleanup Student_area sv
+- finalize lab description
 
 ---
 
@@ -98,4 +102,5 @@ Use BRAM for both `ibuf` and `obuf`
 
 ## 2026-04-23
 ### Did
-- 
+- hello.c works on FPGA
+- pixel_inversion.c works with the python GUI on FPGA.

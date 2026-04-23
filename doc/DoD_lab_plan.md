@@ -100,7 +100,7 @@ Finally, test the complete system on the FPGA.
 
 Synthesize and implement the design using **Vivado**. By running
 ```
-make fpga PROJECT=nexys_a7 TEST=pixel_inversion
+make fpga PROJECT=nexys_a7
 ```
 If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
 

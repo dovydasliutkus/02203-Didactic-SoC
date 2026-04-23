@@ -39,6 +39,12 @@ import threading
 
 ################################################################################
 # Configuration constants
+BAUD_RATES = ["9600", "19200", "38400", "57600", "115200"]
+DEFAULT_BAUD = "38400"
+
+def get_baud():
+    return int(app.getOptionBox("list_baud_s"))
+
 testChar = b't'
 testCharAns = b'y'
 downloadChar = b'w'
@@ -396,7 +402,7 @@ def downloadSerialTh():
                     break
                 time.sleep(0.1)
             if testSerial():
-                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=115200,
+                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=get_baud(),
                                     bytesize=8, parity='N', stopbits=1, timeout=None, xonxoff=0, rtscts=0)
                 ser.reset_input_buffer()
                 ser.reset_output_buffer()
@@ -429,7 +435,7 @@ def clearMemoryTh():
                     break
                 time.sleep(0.1)
             if testSerial():
-                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=115200,
+                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=get_baud(),
                                     bytesize=8, parity='N', stopbits=1, timeout=None, xonxoff=0, rtscts=0)
                 ser.reset_input_buffer()
                 ser.reset_output_buffer()
@@ -463,7 +469,7 @@ def uploadSerialTh():
                     break
                 time.sleep(0.1)
             if testSerial():
-                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=115200,
+                ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=get_baud(),
                                     bytesize=8, parity='N', stopbits=1, timeout=1, xonxoff=0, rtscts=0)
                 ser.reset_input_buffer()
                 ser.reset_output_buffer()
@@ -534,7 +540,7 @@ def clearMemory(button):
 
 
 def testSerial():
-    ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=115200,
+    ser = serial.Serial(port=app.getOptionBox("list_serial_s"), baudrate=get_baud(),
                         bytesize=8, parity='N', stopbits=1, timeout=0.5, xonxoff=0, rtscts=0)
     ser.reset_input_buffer()
     ser.reset_output_buffer()
@@ -692,6 +698,12 @@ app.addLabel("label_s1", "Serial port:", row, 0)
 app.setLabelAlign("label_s1", "right")
 app.addOptionBox("list_serial_s", ["-No serial ports available-"], row, 1, 2)
 app.addNamedButton("Refresh list", "button_s1", refreshSerialList, row, 3)
+
+row = row + 1
+app.addLabel("label_baud", "Baud rate:", row, 0)
+app.setLabelAlign("label_baud", "right")
+app.addOptionBox("list_baud_s", BAUD_RATES, row, 1, 2)
+app.setOptionBox("list_baud_s", DEFAULT_BAUD)
 
 row = row + 1
 app.addLabel("label_s2", "Test serial port:", row, 0)

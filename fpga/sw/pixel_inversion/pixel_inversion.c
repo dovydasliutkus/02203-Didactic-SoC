@@ -54,44 +54,46 @@ static inline void uart_write_byte(uint8_t b)
 int main(void)
 {
     ss_init(0);
-    uart_init(100000000u, 115200u);
+    uart_init(8000000u, 38400u);
     IIR_FCR = 0x07u; /* FIFO enable + RX reset + TX reset */
 
-#ifdef SIM_FAST_UART
-    /* Override baud divisor for fast simulation.
-     * divisor=2 → 100 MHz / (16×2) = 3.125 Mbaud (320 ns/bit).
-     * Testbench must be compiled with +define+SIM_FAST_UART to match.
-     * NOTE: divisor=1 is unusable — iBAUDOUTN gets stuck at 0 and RX never fires. */
-    LCR = (1u << 7) | 3u;  /* enable DLAB */
-    RBR_THR_DLL = 2u;       /* divisor = 2 → 100 MHz / (16×2) = 3.125 Mbaud (320 ns/bit) */
-    LCR = 3u;               /* disable DLAB */
-#endif
+    /* Main command loop:
+     *   't' -> ping, reply 'y'
+     *   'w' -> receive image into ibuf, run accelerator
+     *   'r' -> send obuf back over UART (only if processing is done)
+     */
+    uint8_t result_ready = 0u;
+    while (1) {
+        uint8_t cmd = uart_read_byte();
 
-#ifndef BYPASS_UART
-    /* Receive image pixel-by-pixel from UART, pack 4 bytes per word,
-     * write directly into ibuf — no DMEM buffering needed. */
-    *ACCEL_IBUF_ADDR = 0u;
-    for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
-         uint32_t word = (uint32_t)uart_read_byte()
-                       | ((uint32_t)uart_read_byte() <<  8)
-                       | ((uint32_t)uart_read_byte() << 16)
-                       | ((uint32_t)uart_read_byte() << 24);
-        *ACCEL_IBUF_DATA = word;
+        if (cmd == 't') {
+            uart_write_byte('y');
+
+        } else if (cmd == 'w') {
+            result_ready = 0u;
+            *ACCEL_IBUF_ADDR = 0u;
+            for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
+                uint32_t word = (uint32_t)uart_read_byte()
+                              | ((uint32_t)uart_read_byte() <<  8)
+                              | ((uint32_t)uart_read_byte() << 16)
+                              | ((uint32_t)uart_read_byte() << 24);
+                *ACCEL_IBUF_DATA = word;
+            }
+            *ACCEL_CSR = CSR_DATA_READY;
+            while (!(*ACCEL_CSR & CSR_DONE)) {}
+            result_ready = 1u;
+
+        } else if (cmd == 'r' && result_ready) {
+            *ACCEL_OBUF_ADDR = 0u;
+            for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
+                uint32_t word = *ACCEL_OBUF_DATA;
+                uart_write_byte((uint8_t)(word         & 0xFFu));
+                uart_write_byte((uint8_t)((word >>  8) & 0xFFu));
+                uart_write_byte((uint8_t)((word >> 16) & 0xFFu));
+                uart_write_byte((uint8_t)((word >> 24) & 0xFFu));
+            }
+        }
     }
-#endif /* BYPASS_UART: ibuf pre-loaded by testbench */
 
-    *ACCEL_CSR = CSR_DATA_READY;
-    while (!(*ACCEL_CSR & CSR_DONE)) {}
-
-    /* Send processed pixels back over UART, byte by byte. */
-    // *ACCEL_OBUF_ADDR = 0u;
-    // for (uint32_t i = 0u; i < BUF_DEPTH; i++) {
-    //     uint32_t word = *ACCEL_OBUF_DATA;
-    //     uart_write_byte((uint8_t)(word        & 0xFFu));
-    //     uart_write_byte((uint8_t)((word >>  8) & 0xFFu));
-    //     uart_write_byte((uint8_t)((word >> 16) & 0xFFu));
-    //     uart_write_byte((uint8_t)((word >> 24) & 0xFFu));
-    // }
-    
     return 0;
 }

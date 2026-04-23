@@ -8,11 +8,11 @@
  *    - compile tb lib with uart receiver define
  */
 #include "uart.h"
+#include "soc_ctrl.h"
 
 int main() {
 
-  // 8 MHz clock, 9600 baud
-  uart_init(8000000,9600);
+  uart_init(8000000u, 38400u);
 
   while (1) {
     uart_print("hello from didactic!\r\n");

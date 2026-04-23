@@ -132,3 +132,4 @@ check_timing                                                          -file $BUI
 report_timing -max_paths 50 -nworst 50 -delay_type max -sort_by slack -file $BUILD_DIR/fpga/logs/$PROJECT.timing_WORST_50.rpt
 report_timing -nworst 1 -delay_type max -sort_by group                -file $BUILD_DIR/fpga/logs/$PROJECT.timing.rpt
 report_utilization -hierarchical                                      -file $BUILD_DIR/fpga/logs/$PROJECT.utilization.rpt
+report_utilization                                                    -file $BUILD_DIR/fpga/logs/$PROJECT.utilization_pct.rpt
