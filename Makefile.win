@@ -1,0 +1,77 @@
+########################################
+# Top repository makefile - Windows
+# Project: Edu4chip / Didactic-SoC
+#
+# Requirements:
+#   - GNU Make for Windows (e.g. via Chocolatey: choco install make)
+#   - WSL2 with riscv32-unknown-elf toolchain and bender installed
+#   - Questa installed natively (vsim/vopt/vlog on PATH)
+#   - Vivado installed natively (vivado on PATH)
+#
+# Usage: make -f Makefile.win <target>
+########################################
+
+# Run a command inside WSL, passing Windows-style BUILD_DIR converted to WSL path
+WSL = wsl
+
+# Convert Windows path to WSL path: C:\foo\bar -> /mnt/c/foo/bar
+# We use wsl itself to do the conversion at runtime
+WSL_BUILD_DIR = $(shell $(WSL) wslpath '$(BUILD_DIR)')
+
+BUILD_DIR ?= $(CURDIR)\build
+TEST      ?= blink
+PROJECT   ?= nexys_a7
+
+repository_init:
+	$(WSL) bender update
+	$(WSL) bender vendor init
+
+check-env:
+	if not exist "$(BUILD_DIR)\logs\compile" mkdir "$(BUILD_DIR)\logs\compile"
+	if not exist "$(BUILD_DIR)\logs\opt"     mkdir "$(BUILD_DIR)\logs\opt"
+	if not exist "$(BUILD_DIR)\logs\sim"     mkdir "$(BUILD_DIR)\logs\sim"
+
+clean_build:
+	if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
+	del /q src\tb\out_images\*
+
+######################################################################
+# SW targets — compiled inside WSL
+######################################################################
+
+build_test: check-env
+	$(WSL) make -C sw test BUILD_DIR=$(WSL_BUILD_DIR) TESTCASE=$(TEST)
+
+######################################################################
+# HW simulation targets — Questa runs natively on Windows
+######################################################################
+
+compile: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win compile BUILD_DIR=$(BUILD_DIR)
+
+elaborate: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win elaborate BUILD_DIR=$(BUILD_DIR) TESTCASE=$(TEST)
+
+elaborate_fast: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win elaborate_fast BUILD_DIR=$(BUILD_DIR) TESTCASE=$(TEST)
+
+run_sim: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win run_sim BUILD_DIR=$(BUILD_DIR)
+
+test_all: check-env compile elaborate_fast build_test run_sim
+
+test_all_gui: check-env compile elaborate build_test
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win run_sim BUILD_DIR=$(BUILD_DIR) GUI=
+
+test_ss: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win sim_ss BUILD_DIR=$(BUILD_DIR)
+
+test_ss_gui: check-env
+	$(MAKE) -f Makefile.win -C sim -f Makefile.win sim_ss BUILD_DIR=$(BUILD_DIR) GUI=
+
+######################################################################
+# FPGA targets — Vivado runs natively on Windows
+######################################################################
+
+fpga: check-env
+	$(MAKE) -f Makefile.win -C fpga -f Makefile.win all_xilinx BUILD_DIR=$(BUILD_DIR)

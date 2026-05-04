@@ -1,0 +1,41 @@
+########################################
+# SW makefile - Windows
+# RISC-V toolchain runs inside WSL.
+# All Linux utilities (sed, xxd, etc.) run via WSL.
+########################################
+
+WSL      = wsl
+TESTCASE ?= blink
+BUILD_DIR ?= ..\build
+XLEN     ?= 32
+PREFIX   ?= riscv$(XLEN)-unknown-elf
+
+FAST_UART   ?= 1
+BYPASS_UART ?= 0
+UART_FLAG   = $(if $(filter 1,$(FAST_UART)),-DSIM_FAST_UART,)
+BYPASS_FLAG = $(if $(filter 1,$(BYPASS_UART)),-DBYPASS_UART,)
+
+# Convert Windows BUILD_DIR to WSL path at runtime
+WSL_BUILD_DIR = $(shell $(WSL) wslpath '$(BUILD_DIR)')
+# WSL path to this sw/ directory
+WSL_SW_DIR    = $(shell $(WSL) wslpath '$(CURDIR)')
+
+env:
+	if not exist "$(BUILD_DIR)\sw" mkdir "$(BUILD_DIR)\sw"
+
+# All compilation and post-processing delegated to WSL
+build_test:
+	$(WSL) make -C $(WSL_SW_DIR) -f Makefile \
+		BUILD_DIR=$(WSL_BUILD_DIR) \
+		TESTCASE=$(TESTCASE) \
+		FAST_UART=$(FAST_UART) \
+		BYPASS_UART=$(BYPASS_UART) \
+		build_test
+
+hex_test:
+	$(WSL) make -C $(WSL_SW_DIR) -f Makefile \
+		BUILD_DIR=$(WSL_BUILD_DIR) \
+		TESTCASE=$(TESTCASE) \
+		hex_test trim dump cleanup
+
+test: env build_test hex_test

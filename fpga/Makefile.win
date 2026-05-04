@@ -1,0 +1,36 @@
+########################################
+# FPGA makefile - Windows
+# Vivado runs natively on Windows.
+# SW compilation delegated to WSL.
+########################################
+
+WSL    = wsl
+VIVADO ?= vivado
+TEST   ?= blink
+
+BUILD_DIR ?= ..\build
+PROJECT   ?= nexys_a7
+
+# WSL paths
+WSL_BUILD_DIR = $(shell $(WSL) wslpath '$(BUILD_DIR)')
+WSL_SW_DIR    = $(shell $(WSL) wslpath '$(CURDIR)\sw')
+WSL_FPGA_DIR  = $(shell $(WSL) wslpath '$(CURDIR)')
+
+check_env:
+	if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+
+all_xilinx: check_env
+	$(VIVADO) -mode batch -notrace -source scripts\run_xilinx.tcl
+
+all_xilinx_gui: check_env
+	start $(VIVADO) -mode gui -source scripts\run_xilinx.tcl
+
+# SW compiled inside WSL using fpga/sw/Makefile
+build_test: check_env
+	$(WSL) make -C $(WSL_FPGA_DIR)/sw -f Makefile \
+		BUILD_DIR=$(WSL_BUILD_DIR)/fpga \
+		TESTCASE=$(TEST) \
+		test
+
+load_elf: check_env
+	riscv32-unknown-elf-gdb $(BUILD_DIR)\fpga\sw\$(TEST).elf -x utils\connect-and-load.gdb

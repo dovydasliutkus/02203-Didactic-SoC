@@ -154,5 +154,5 @@ Use BRAM for both `ibuf` and `obuf`
 - make for sw can be run from `sw/` or `fpga/sw/` this is not very clean. Could make it more simple from top make. however sim and fpga applications are different (blinky, pixel_inversion). Keep as is.
 
 ### Did
-- Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`)
+- Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`). full system testbenches successfully inverts pixels.
 - Work on compatability for windows
