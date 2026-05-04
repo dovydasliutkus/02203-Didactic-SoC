@@ -48,7 +48,7 @@ VOPT_OPTS_FAST = $(filter-out +acc,$(VOPT_OPTS))
 GUI ?= -c
 
 # bender runs in WSL; capture the file list into a temp file
-WSL_ROOT = $(shell $(WSL) wslpath '$(CURDIR)\..')
+WSL_ROOT = $(shell $(WSL) wslpath '$(CURDIR)/..')
 SIM_FLIST_WSL = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender script flist -t rtl -t vendor -t simulation -t tracer -t didactic_obi")
 
 # Include paths — resolved via WSL bender paths

@@ -18,7 +18,7 @@ WSL = wsl
 # We use wsl itself to do the conversion at runtime
 WSL_BUILD_DIR = $(shell $(WSL) wslpath '$(BUILD_DIR)')
 
-BUILD_DIR ?= $(CURDIR)\build
+BUILD_DIR ?= $(CURDIR)/build
 TEST      ?= blink
 PROJECT   ?= nexys_a7
 
@@ -34,14 +34,14 @@ check-env:
 
 clean_build:
 	if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
-	del /q src\tb\out_images\*
+	if exist "src\tb\out_images\" rmdir /s /q "src\tb\out_images\"
 
 ######################################################################
 # SW targets — compiled inside WSL
 ######################################################################
 
 build_test: check-env
-	$(WSL) make -C sw test BUILD_DIR=$(WSL_BUILD_DIR) TESTCASE=$(TEST)
+	$(WSL) bash -il -c "make -C sw test BUILD_DIR=$(WSL_BUILD_DIR) TESTCASE=$(TEST)"
 
 ######################################################################
 # HW simulation targets — Questa runs natively on Windows
