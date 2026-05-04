@@ -115,6 +115,7 @@ sources:
     - src/rtl/imt_ss_tieoff.sv
     - src/rtl/kth_ss_tieoff.sv
     - src/rtl/tum_ss_tieoff.sv
+    - src/rtl/pixel_acc.sv
     - src/rtl/Student_area_0.sv
     - src/rtl/student_ss_1.sv
     - src/rtl/Student_SS_2.sv

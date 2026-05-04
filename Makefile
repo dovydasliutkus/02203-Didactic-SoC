@@ -29,10 +29,11 @@ check-env:
 	mkdir -p $(BUILD_DIR)/logs/compile
 	mkdir -p $(BUILD_DIR)/logs/opt
 	mkdir -p $(BUILD_DIR)/logs/sim
+	mkdir -p src/tb/out_images
 
 clean_build:
 	rm -rf $(BUILD_DIR)
-	rm -r  src/tb/out_images/*
+	rm -rf  src/tb/out_images
 
 clean_ips:
 	rm -fr ./.bender

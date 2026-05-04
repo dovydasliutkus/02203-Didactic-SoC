@@ -29,7 +29,7 @@ In the final stages:
 - **Windows** - native Questa + Vivado, RISC-V toolchain TBD (see below)
 
 ### Dependency elimination (all platforms benefit)
-1. **Bender** - pre-generate `files.f` file lists and commit them; ship `.bender/` vendor checkouts in-repo. Students never need to run bender. Only maintainers re-run it when dependencies change.
+1. **Bender** - pre-generate `files.f` file lists and commit them; ship `.bender/` vendor checkouts in-repo. Students never need to run bender. Only maintainers re-run it when dependencies change. But also makes repo bigger and need a file list for every Makefile. bender ships prebuilt for all OSs so maybe keep it for now.
 2. **OpenOCD / JTAG** - use mem init with bitstream as primary flow; keep JTAG as optional advanced path (already noted as TODO).
 
 ### Linux (no changes needed)
@@ -156,3 +156,5 @@ Use BRAM for both `ibuf` and `obuf`
 ### Did
 - Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`). full system testbenches successfully inverts pixels.
 - Work on compatability for windows
+
+Bender installed in WSL. Worked for repository init (windows throws a warning to do it in WSL memory region due to many IOs but it completes in less than a minute so not a problem)

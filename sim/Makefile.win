@@ -12,6 +12,7 @@ SHELL = cmd
 DUT     = tb_didactic
 SS_TB   = tb_student_ss
 
+# By default use fastest available UART
 FAST_UART ?= 1
 SIM_UART_MODEL ?= 1
 BYPASS_UART ?= 0
@@ -27,13 +28,20 @@ TB_DEFINES = \
 	$(UART_MODEL_DEFINE) \
 	$(BYPASS_UART_DEFINE)
 
+# Dut defines:
+# * RVFi required by tracer
+# * Synthesis disables verification assertions within
+# pulp / ibex codes
 DUT_DEFINES = \
 	+define+RVFI \
 	+define+INC_ASSERT \
 
 DUT_LIBS  = -L $(BUILD_DIR)\didactic_lib
+
+# vsim-8386: suppress bit-to-reg assignment errors
 VSIM_OPTS = -suppress vsim-3009 -suppress vsim-8386
 VOPT_OPTS = -sv -O5 -suppress vopt-2577 +acc
+# vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = -svinputport=compat -suppress vlog-2583 -suppress vlog-2244
 VOPT_OPTS_FAST = $(filter-out +acc,$(VOPT_OPTS))
 
@@ -104,7 +112,7 @@ run_sim: library_mapping
 # ============================================================
 # Isolated Student_area_0 testbench
 # ============================================================
-SS_TB_SRC = ..\src\tb\tb_student_ss.sv ..\src\rtl\Student_area_0.sv
+SS_TB_SRC = ..\src\tb\tb_student_ss.sv ..\src\rtl\Student_area_0.sv ..\src\rtl\pixel_acc.sv
 
 compile_ss: env
 	vlib $(BUILD_DIR)\didactic_lib

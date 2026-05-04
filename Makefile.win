@@ -30,6 +30,7 @@ check-env:
 	if not exist "$(BUILD_DIR)\logs\compile" mkdir "$(BUILD_DIR)\logs\compile"
 	if not exist "$(BUILD_DIR)\logs\opt"     mkdir "$(BUILD_DIR)\logs\opt"
 	if not exist "$(BUILD_DIR)\logs\sim"     mkdir "$(BUILD_DIR)\logs\sim"
+	if not exist "src/tb/out_images"     mkdir "src/tb/out_images"
 
 clean_build:
 	if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"

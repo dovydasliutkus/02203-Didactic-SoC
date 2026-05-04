@@ -14,14 +14,15 @@ START_TIME=`date +%F_%H:%M`
 SHELL = bash
 
 DUT = tb_didactic
+SS_TB   = tb_student_ss
 
 # By default use fastest available UART
 FAST_UART ?= 1
 SIM_UART_MODEL ?= 1
+BYPASS_UART ?= 0
 
 UART_DEFINE        = $(if $(filter 1,$(FAST_UART)),+define+SIM_FAST_UART,)
 UART_MODEL_DEFINE  = $(if $(filter 1,$(SIM_UART_MODEL)),+define+SIM_UART_MODEL,)
-BYPASS_UART ?= 0
 BYPASS_UART_DEFINE = $(if $(filter 1,$(BYPASS_UART)),+define+BYPASS_UART,)
 
 TB_DEFINES = \
