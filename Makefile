@@ -32,6 +32,7 @@ check-env:
 
 clean_build:
 	rm -rf $(BUILD_DIR)
+	rm -r  src/tb/out_images/*
 
 clean_ips:
 	rm -fr ./.bender
@@ -91,6 +92,9 @@ test_all_gui: check-env compile elaborate build_test
 
 test_ss: check-env
 	$(MAKE) -C sim sim_ss BUILD_DIR=$(BUILD_DIR)
+
+test_ss_gui: check-env
+	$(MAKE) -C sim sim_ss BUILD_DIR=$(BUILD_DIR) GUI=""
 
 ######################################################################
 # fpga targets

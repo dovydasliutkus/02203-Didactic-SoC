@@ -109,7 +109,7 @@ endif
 
 SANITY_CHECK ?= 0
 TESTCASE ?= blink
-GUI ?= "-c"
+GUI ?= -c
 
 # +acc enables full signal visibility for GUI waveforms (adds overhead).
 # elaborate uses +acc (needed for $readmemh hierarchy path access).
@@ -145,7 +145,7 @@ run_sim: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \
-	-do "do wave.do; do mem.do; run -all;" \
+	$(if $(filter -c,$(GUI)),-do "run -all;",-do "do wave.do; do mem.do; run -all;") \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log
 
 #============================================================
@@ -153,7 +153,7 @@ run_sim: library_mapping
 #============================================================
 
 SS_TB = tb_student_ss
-SS_TB_SRC = ../src/tb/tb_student_ss.sv ../src/rtl/Student_area_0.sv
+SS_TB_SRC = ../src/tb/tb_student_ss.sv ../src/rtl/Student_area_0.sv ../src/rtl/pixel_acc.sv
 
 compile_ss: env
 	vlib $(BUILD_DIR)/didactic_lib
@@ -176,7 +176,7 @@ run_ss: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(SS_TB)_opt \
-	-do "do wave_ss.do; run -all;" \
+	$(if $(filter -c,$(GUI)),-do "run -all;",-do "do wave_ss.do; run -all;") \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_ss_sim.log
 
 sim_ss: compile_ss elaborate_ss run_ss

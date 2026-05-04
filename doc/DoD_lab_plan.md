@@ -63,7 +63,7 @@ The testbench reads an input PGM (set by the `src_image` parameter), drives the 
 
 You can also run the testbench with GUI, which will be useful when debugging your design
 ```
-🔴 TODO: Add GUI target for test_ss
+make test_ss_gui
 ```
 
 ---

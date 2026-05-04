@@ -4,33 +4,26 @@
   Description:
     * Image processing accelerator Student Subsystem
     * APB slave: CSR + indexed input/output frame buffer access
-    * FSM copies input buffer to output buffer, applying pixel processing
+    * Instantiates pixel_acc, which students implement.
     * CPU flow:
-    *   1. Write pixels via IBUF_ADDR + IBUF_DATA (auto-incrementing)
+    *   1. Write pixels via IBUF_ADDR + IBUF_DATA (address auto-incrementing)
     *   2. Write DATA_READY=1 to CSR
     *   3. Poll DONE bit in CSR
-    *   4. Read pixels via OBUF_ADDR + OBUF_DATA (auto-incrementing)
+    *   4. Read pixels via OBUF_ADDR + OBUF_DATA (address auto-incrementing)
     *
     * Register map (byte offsets):
-    *   0x00  CSR        [0] DATA_READY (W1S, auto-cleared by FSM)
+    *   0x00  CSR        [0] DATA_READY (W1S, auto-cleared when processing starts)
     *                    [1] DONE       (RO,  cleared when DATA_READY set)
-    *                    [2] BUSY       (RO,  high while FSM running)
+    *                    [2] BUSY       (RO,  high while accelerator running)
     *   0x04  IBUF_ADDR  input buffer word-address pointer  (RW)
     *   0x08  IBUF_DATA  input buffer write port            (WO, auto-increments IBUF_ADDR)
     *   0x0C  OBUF_ADDR  output buffer word-address pointer (RW)
     *   0x10  OBUF_DATA  output buffer read port            (RO, auto-increments OBUF_ADDR)
     *
-    * Buffer layout: each APB word holds (32 / PIXEL_WIDTH) = 4 pixels,
+    * Buffer layout: each word holds (32 / PIXEL_WIDTH) = 4 pixels,
     * packed little-endian (pixel 0 in LSBs).
     *
     * NOTE: do not write to IBUF while BUSY=1; do not read OBUF until DONE=1.
-    *
-    * Pipeline note (ibuf BRAM has 1-cycle read latency):
-    *   cycle 0: FSM_PROCESS entered, ibuf[0] read issued,  no obuf write (pipe_valid=0)
-    *   cycle 1: ibuf[1] read issued, obuf[0] <= f(ibuf_rdata), pipe_valid=1
-    *   ...
-    *   cycle N: ibuf[N] read issued (last), obuf[N-1] written
-    *   cycle N+1: FSM_DONE, obuf[N] written (pipeline drain), done
 */
 
 module Student_area_0 #(
@@ -79,37 +72,32 @@ localparam int PIXELS_PER_WORD = 32 / PIXEL_WIDTH;
 localparam int TOTAL_PIXELS    = FRAME_WIDTH * FRAME_HEIGHT;
 localparam int BUF_DEPTH       = TOTAL_PIXELS / PIXELS_PER_WORD;
 localparam int BUF_AW          = $clog2(BUF_DEPTH);
-// BUF_DEPTH words × 4 B = (352×288/4) × 4 = 101 376 B ≈ 99 KB per buffer
-
-// FSM
-typedef enum logic [1:0] {
-    FSM_IDLE    = 2'b00,
-    FSM_PROCESS = 2'b01,  // pipelined read-process-write loop
-    FSM_DONE    = 2'b10   // pipeline drain: write last word, assert DONE
-} fsm_state_t;
-
-fsm_state_t        fsm_state;
-logic [BUF_AW-1:0] proc_addr;    // ibuf read address (current)
-logic [BUF_AW-1:0] proc_addr_d;  // ibuf read address delayed 1 cycle = obuf write address
-logic              pipe_valid;    // 0 on first FSM_PROCESS cycle (ibuf_rdata not yet valid)
 
 // CSR registers
 logic csr_data_ready, csr_done, csr_busy;
 
-// Buffer address pointers
+// APB buffer address pointers
 logic [BUF_AW-1:0] ibuf_waddr, obuf_raddr;
-logic              obuf_rd_wait;  // one-cycle wait state for obuf BRAM read latency
+logic              obuf_rd_wait;
 
-// BRAM port wires
-logic              ibuf_wr_en, obuf_wr_en;
-logic [BUF_AW-1:0] ibuf_wr_addr, obuf_wr_addr;
-logic [31:0]       ibuf_wr_data, obuf_wr_data;
-logic              ibuf_rd_en, obuf_rd_en;
-logic [BUF_AW-1:0] ibuf_rd_addr, obuf_rd_addr;
-logic [31:0]       ibuf_rd_data, obuf_rd_data;  // registered by bram_sdp, valid 1 cycle after rd_en
+// BRAM port wires - ibuf
+logic              ibuf_wr_en;
+logic [BUF_AW-1:0] ibuf_wr_addr;
+logic [31:0]       ibuf_wr_data;
+logic              ibuf_rd_en;
+logic [BUF_AW-1:0] ibuf_rd_addr;
+logic [31:0]       ibuf_rd_data;
 
-// Processed pixel word - student writes this in the always_comb block below
-logic [31:0] pixel_out;
+// BRAM port wires - obuf
+logic              obuf_wr_en;
+logic [BUF_AW-1:0] obuf_wr_addr;
+logic [31:0]       obuf_wr_data;
+logic              obuf_rd_en;
+logic [BUF_AW-1:0] obuf_rd_addr;
+logic [31:0]       obuf_rd_data;
+
+// Accelerator handshake
+logic acc_start, acc_finish;
 
 // ============================================================
 // BRAM instances
@@ -135,36 +123,45 @@ bram_sdp #(.DATA_WIDTH(32), .ADDR_WIDTH(BUF_AW), .DEPTH(BUF_DEPTH)) obuf (
 );
 
 // ============================================================
-// ibuf BRAM port - write: APB, read: FSM
+// APB ibuf write port
 // ============================================================
 assign ibuf_wr_en   = PSEL && !PREADY && PWRITE && (PADDR == ADDR_IBUF_DATA);
 assign ibuf_wr_addr = ibuf_waddr;
 assign ibuf_wr_data = PWDATA;
-assign ibuf_rd_en   = (fsm_state == FSM_PROCESS);
-assign ibuf_rd_addr = proc_addr;
 
 // ============================================================
-// obuf BRAM port - write: FSM, read: APB
+// APB obuf read port
 // ============================================================
-assign obuf_wr_en   = pipe_valid;   // suppressed on first FSM_PROCESS cycle
-assign obuf_wr_addr = proc_addr_d;
-assign obuf_wr_data = pixel_out;
 assign obuf_rd_en   = PSEL && !PREADY && !PWRITE && (PADDR == ADDR_OBUF_DATA);
 assign obuf_rd_addr = obuf_raddr;
 
 // ============================================================
-// STUDENT: Implement your pixel processing algorithm below
-// ibuf_rd_data contains the pixel word read from ibuf one cycle ago.
-// Compute pixel_out from ibuf_rd_data - it will be written to obuf.
+// Student accelerator instance
 // ============================================================
-always_comb begin
-    pixel_out = ~ibuf_rd_data;  // Invert all pixels (replace with your algorithm)
-end
+pixel_acc #(
+    .BUF_AW    (BUF_AW),
+    .BUF_DEPTH (BUF_DEPTH),
+    .IMG_WIDTH (FRAME_WIDTH / PIXELS_PER_WORD)  // row width in words
+) i_acc (
+    .clk        (clk_in),
+    .rst_n      (rst),
+    // ibuf read port
+    .ibuf_rd_en   (ibuf_rd_en),
+    .ibuf_rd_addr (ibuf_rd_addr),
+    .ibuf_rd_data (ibuf_rd_data),
+    // obuf write port
+    .obuf_wr_en   (obuf_wr_en),
+    .obuf_wr_addr (obuf_wr_addr),
+    .obuf_wr_data (obuf_wr_data),
+    // handshake
+    .start      (acc_start),
+    .finish     (acc_finish)
+);
 
 // ============================================================
-// APB register file + FSM  (synchronous reset)
+// APB register file + control FSM
 // ============================================================
-always_ff @(posedge clk_in or negedge rst) begin
+always_ff @(posedge clk_in) begin
     if (~rst) begin
         PREADY         <= 1'b0;
         PSLVERR        <= 1'b0;
@@ -175,11 +172,10 @@ always_ff @(posedge clk_in or negedge rst) begin
         ibuf_waddr     <= '0;
         obuf_raddr     <= '0;
         obuf_rd_wait   <= 1'b0;
-        fsm_state      <= FSM_IDLE;
-        proc_addr      <= '0;
-        proc_addr_d    <= '0;
-        pipe_valid     <= 1'b0;
+        acc_start      <= 1'b0;
     end else begin
+
+        acc_start <= 1'b0;  // pulse for one cycle only
 
         // ----------------------------------------------------------
         // APB slave
@@ -188,7 +184,7 @@ always_ff @(posedge clk_in or negedge rst) begin
             if (PREADY) begin
                 PREADY <= 1'b0;
             end else if (!PWRITE && PADDR == ADDR_OBUF_DATA && !obuf_rd_wait) begin
-                // BRAM read latency: hold off PREADY for one cycle so obuf_rd_data is valid
+                // BRAM read latency: stall one cycle so obuf_rd_data is valid
                 obuf_rd_wait <= 1'b1;
                 PREADY       <= 1'b0;
             end else begin
@@ -196,10 +192,10 @@ always_ff @(posedge clk_in or negedge rst) begin
                 PREADY       <= 1'b1;
                 obuf_rd_wait <= 1'b0;
 
-                if (PWRITE) begin    // WRITE
+                if (PWRITE) begin
                     case (PADDR)
                         ADDR_CSR: begin
-                            if (PWDATA[0] && fsm_state == FSM_IDLE) begin
+                            if (PWDATA[0] && !csr_busy) begin
                                 csr_data_ready <= 1'b1;
                                 csr_done       <= 1'b0;
                             end
@@ -212,13 +208,13 @@ always_ff @(posedge clk_in or negedge rst) begin
                         ADDR_OBUF_ADDR: obuf_raddr <= PWDATA[BUF_AW-1:0];
                         default:        PSLVERR <= 1'b1;
                     endcase
-                end else begin      // READ
+                end else begin
                     case (PADDR)
                         ADDR_CSR:       PRDATA <= 32'({csr_busy, csr_done, csr_data_ready});
                         ADDR_IBUF_ADDR: PRDATA <= 32'(ibuf_waddr);
                         ADDR_OBUF_ADDR: PRDATA <= 32'(obuf_raddr);
                         ADDR_OBUF_DATA: begin
-                            PRDATA <= obuf_rd_data;  // valid: BRAM read was issued one cycle ago
+                            PRDATA <= obuf_rd_data;
                             if (obuf_raddr < BUF_AW'(BUF_DEPTH - 1))
                                 obuf_raddr <= obuf_raddr + 1'b1;
                         end
@@ -236,55 +232,32 @@ always_ff @(posedge clk_in or negedge rst) begin
         end
 
         // ----------------------------------------------------------
-        // Processing FSM
+        // Launch accelerator when DATA_READY is set
         // ----------------------------------------------------------
-        case (fsm_state)
-            FSM_IDLE: begin
-                if (csr_data_ready) begin
-                    csr_data_ready <= 1'b0;
-                    csr_busy       <= 1'b1;
-                    proc_addr      <= '0;
-                    pipe_valid     <= 1'b0;
-                    fsm_state      <= FSM_PROCESS;
-                end
-            end
+        if (csr_data_ready && !csr_busy) begin
+            csr_data_ready <= 1'b0;
+            csr_busy       <= 1'b1;
+            acc_start      <= 1'b1;
+        end
 
-            FSM_PROCESS: begin
-                pipe_valid  <= 1'b1;
-                proc_addr_d <= proc_addr;
-
-                if (proc_addr == BUF_AW'(BUF_DEPTH - 1))
-                    fsm_state <= FSM_DONE;
-                else
-                    proc_addr <= proc_addr + 1'b1;
-            end
-
-            FSM_DONE: begin
-                // obuf_wr_en is still high (pipe_valid=1), writing the last word
-                csr_busy   <= 1'b0;
-                csr_done   <= 1'b1;
-                pipe_valid <= 1'b0;
-                fsm_state  <= FSM_IDLE;
-            end
-
-            default: fsm_state <= FSM_IDLE;
-        endcase
+        if (acc_finish) begin
+            csr_busy <= 1'b0;
+            csr_done <= 1'b1;
+        end
 
     end
 end
 
-// IRQ fires when DONE is set and interrupts are enabled
-assign irq = csr_done & irq_en;
-
-// Tie-off unused GPIO interface
+assign irq          = csr_done & irq_en;
 assign pmod_gpo     = 16'h0;
 assign pmod_gpio_oe = 16'h0;
 
 endmodule
 
+
 // ============================================================
 // Simple dual-port BRAM (1 write port + 1 read port)
-// No reset on memory or read output (required for BRAM inference).
+// No reset on memory contents (required for BRAM inference).
 // ============================================================
 module bram_sdp #(
     parameter DATA_WIDTH = 32,
@@ -292,11 +265,9 @@ module bram_sdp #(
     parameter DEPTH      = 1024
 ) (
     input  logic                  clk,
-    // Write port
-    input  logic                  wr_en,
     input  logic [ADDR_WIDTH-1:0] wr_addr,
+    input  logic                  wr_en,
     input  logic [DATA_WIDTH-1:0] wr_data,
-    // Read port
     input  logic                  rd_en,
     input  logic [ADDR_WIDTH-1:0] rd_addr,
     output logic [DATA_WIDTH-1:0] rd_data

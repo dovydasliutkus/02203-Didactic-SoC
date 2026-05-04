@@ -22,7 +22,7 @@ always #5 clk = ~clk;  // 100 MHz
 logic rst = 0;
 
 // APB signals
-logic [31:0] PADDR;
+logic [11:0] PADDR;
 logic        PENABLE, PSEL, PWRITE;
 logic [31:0] PWDATA;
 logic [3:0]  PSTRB;
@@ -118,14 +118,14 @@ initial begin
     end
 
     // Skip P2 header lines (magic, comment, dimensions, maxval)
-    $fgets(hdr_str, fd);  // P2
-    $fgets(hdr_str, fd);  // comment
-    $fgets(hdr_str, fd);  // width height
-    $fgets(hdr_str, fd);  // maxval
+    void'($fgets(hdr_str, fd));  // P2
+    void'($fgets(hdr_str, fd));  // comment
+    void'($fgets(hdr_str, fd));  // width height
+    void'($fgets(hdr_str, fd));  // maxval
 
     // Read ASCII pixel values
     for (i = 0; i < TOTAL_PIXELS; i++) begin
-        $fscanf(fd, "%d", tmp_val);
+        void'($fscanf(fd, "%d", tmp_val));
         pixels_in[i] = tmp_val[7:0];
     end
     $fclose(fd);

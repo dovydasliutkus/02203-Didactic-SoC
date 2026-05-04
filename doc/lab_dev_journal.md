@@ -10,13 +10,53 @@
 [sw:risk] Setting baudrate for UART need to check if it can be divided in a clean way from the system frequency.
 
 ## TODO
-- make for sw can be run from sw/ or fpga/sw/ think of a cleaner way maybe. For blinky it makes sense to have seperate sw, maybe for pixel_inversion will be the same.
+
 - mem init with bitstream (openocd will be hard on windows) but leave jtag as an option
-- cleanup Student_area sv
+- cleanup Student_area_0.sv
 - finalize lab description
-(FINISHING)
--  Delete all redundant code like the BYPASS_UART and FAST_UART ifdef statements
+- Remove the need for bender or figure simple way for students to use it
+- Compatability for windows :(
+  
+In the final stages:
+-  Delete all redundant code like the BYPASS_UART and FAST_UART ifdef statements (Only leave the real UART as an option)
 - If not using bender create files.f for simulation and fpga implementation. Also ship the repo with all dependencies.
+
+## Compatibility plan
+
+### Target platforms
+- **Linux** - primary/reference platform, all tools native
+- **macOS** - no Vivado, no Questa, FPGA work on lab computers?
+- **Windows** - native Questa + Vivado, RISC-V toolchain TBD (see below)
+
+### Dependency elimination (all platforms benefit)
+1. **Bender** - pre-generate `files.f` file lists and commit them; ship `.bender/` vendor checkouts in-repo. Students never need to run bender. Only maintainers re-run it when dependencies change.
+2. **OpenOCD / JTAG** - use mem init with bitstream as primary flow; keep JTAG as optional advanced path (already noted as TODO).
+
+### Linux (no changes needed)
+- Current Makefiles work as-is.
+- Minor cleanup: `realpath` -> `abspath`, `sed -r` -> `sed -E`, `wc -w` whitespace strip (for macOS parity).
+
+### macOS
+- **Simulator**: Questa not supported on macOS. Migrate to Verilator? 
+
+    Assessment needed: do testbenches use any Verilator-unsupported SystemVerilog?
+- **FPGA synthesis**: not supported on macOS - students use lab computers or remote access for Vivado/bitstream steps.
+- **RISC-V toolchain**: `brew install riscv-gnu-toolchain` (drop-in, same binary names).
+- Makefile fixes above cover remaining incompatibilities.
+
+### Windows
+- **Questa**: native Windows install.
+- **Vivado**: native Windows install.
+- **RISC-V toolchain**: options under evaluation -
+  - *Option A*: xPack `riscv-none-elf-gcc` - native Windows binary, no WSL, drop-in for bare-metal; `riscv-none-elf` vs `riscv32-unknown-elf` prefix needs verification.
+  - *Option B*: WSL2 only for SW compilation - Windows Makefile calls `wsl make -C sw`; everything else native.
+- **Make on Windows**: GNU Make via [Chocolatey](https://chocolatey.org/) (`choco install make`).
+- A separate `Makefile.win` may be needed for Windows-native paths (backslash, drive letters). Scope TBD after toolchain decision.
+
+### Open questions
+- [ ] Verilator testbench compatibility audit - can it be simulated with Verilator?
+- [ ] xPack toolchain flag compatibility with current `sw/Makefile` (`-march=rv32imc -mabi=ilp32`) or go the WSL way
+- [ ] Windows Makefile scope - wrapper or full duplication?
 
 ---
 
@@ -108,3 +148,11 @@ Use BRAM for both `ibuf` and `obuf`
 - hello.c works on FPGA
 - pixel_inversion.c works with the python GUI on FPGA.
 - Added TODOs in the lab guide.
+
+## 2026-05-04
+### Discuss
+- make for sw can be run from `sw/` or `fpga/sw/` this is not very clean. Could make it more simple from top make. however sim and fpga applications are different (blinky, pixel_inversion). Keep as is.
+
+### Did
+- Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`)
+- Work on compatability for windows
