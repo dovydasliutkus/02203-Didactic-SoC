@@ -31,34 +31,21 @@ set DIR [exec pwd]
 
 create_project didactic-$PROJECT ../build/fpga/$PROJECT -force -part $XILINX_PART
 
-# add include paths of RTL
-set COMMON_CELLS_DIR [exec bender path common_cells]
-set AXI_DIR          [exec bender path axi]
-set APB_DIR          [exec bender path apb]
-set OBI_DIR          [exec bender path obi]
-set REGIF_DIR        [exec bender path register_interface]
-set IBEX_PATH        vendor_ips/ibex
-
-set INCLUDE_DIRS [list  \
-                   $COMMON_CELLS_DIR/include \
-                   $AXI_DIR/include \
-                   $APB_DIR/include \
-                   $REGIF_DIR/include \
-                   $OBI_DIR/include \
-	                 $DIR/../$IBEX_PATH/vendor/lowrisc_ip/dv/sv/dv_utils \
-	                 $DIR/../$IBEX_PATH/vendor/lowrisc_ip/ip/prim/rtl \
-	                 $DIR/../$IBEX_PATH/rtl \
-                 ]
-
+# Read pre-generated include dirs and file lists (produced by make gen_filelists)
+set fp [open "$DIR/includes.f" r]
+set INCLUDE_DIRS [split [string trim [read $fp]] "\n"]
+close $fp
 set_property include_dirs $INCLUDE_DIRS [current_fileset]
 
-# File read
-# Bender tags - add bscane only for basys3_vjtag project
+# File read - bscane variant for basys3_vjtag / nexys_a7
 if { $PROJECT eq "basys3_vjtag" || $PROJECT eq "nexys_a7" } {
-  add_files -norecurse -scan_for_includes [exec bender script flist -t fpga -t xilinx -t rtl -t vendor -t synthesis -t didactic_obi -t bscane]
+  set fp [open "$DIR/flist_bscane.f" r]
 } else {
-  add_files -norecurse -scan_for_includes [exec bender script flist -t fpga -t xilinx -t rtl -t vendor -t synthesis -t didactic_obi]
+  set fp [open "$DIR/flist.f" r]
 }
+set src_files [split [string trim [read $fp]] "\n"]
+close $fp
+add_files -norecurse -scan_for_includes $src_files
 
 if { $PROJECT eq "z1" } {
   add_files -norecurse $DIR/rtl/DidacticZ1.v

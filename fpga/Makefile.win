@@ -1,9 +1,11 @@
 ########################################
 # FPGA makefile - Windows
-# Vivado runs natively on Windows.
-# SW compilation delegated to WSL.
+# Vivado runs natively; SW compilation delegated to WSL.
+# flist.f / flist_bscane.f / includes.txt are committed (Linux-generated,
+# relative paths) and work with Windows Vivado as-is.
 ########################################
 
+SHELL  = cmd
 WSL    = wsl
 VIVADO ?= vivado
 TEST   ?= blink
@@ -11,24 +13,19 @@ TEST   ?= blink
 BUILD_DIR ?= ..\build
 PROJECT   ?= nexys_a7
 
-# WSL paths
-WSL_BUILD_DIR = $(shell $(WSL) wslpath '$(BUILD_DIR)')
-WSL_SW_DIR    = $(shell $(WSL) wslpath '$(CURDIR)\sw')
-WSL_FPGA_DIR  = $(shell $(WSL) wslpath '$(CURDIR)')
-
 check_env:
 	if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 
-all_xilinx: check_env
+all_xilinx: check_env gen_includes
 	$(VIVADO) -mode batch -notrace -source scripts\run_xilinx.tcl
 
-all_xilinx_gui: check_env
+all_xilinx_gui: check_env gen_includes
 	start $(VIVADO) -mode gui -source scripts\run_xilinx.tcl
 
-# SW compiled inside WSL using fpga/sw/Makefile
+# SW compiled inside WSL
 build_test: check_env
-	$(WSL) make -C $(WSL_FPGA_DIR)/sw -f Makefile \
-		BUILD_DIR=$(WSL_BUILD_DIR)/fpga \
+	$(WSL) make -C $(shell $(WSL) wslpath '$(CURDIR)')/sw \
+		BUILD_DIR=$(shell $(WSL) wslpath '$(BUILD_DIR)')/fpga \
 		TESTCASE=$(TEST) \
 		test
 
