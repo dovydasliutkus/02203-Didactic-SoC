@@ -157,4 +157,20 @@ Use BRAM for both `ibuf` and `obuf`
 - Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`). full system testbenches successfully inverts pixels.
 - Work on compatability for windows
 
-Bender installed in WSL. Worked for repository init (windows throws a warning to do it in WSL memory region due to many IOs but it completes in less than a minute so not a problem)
+
+#### Software setup for Windows
+1. Install make. For Windows users recommend Chocolatey package manager (Download here https://chocolatey.org/install). Then run `choco install make`
+2. Install Questa from the given link (for Windows or Linux). Get a license in licensing.altera.com will need to create an account choose fixed and enter NIC ID (MAC address) here. Create an enivornment variable `SALT_LICENSE_FILE` which points to the license `.dat` file.
+3. Install WSL2 if you don't have it already
+4. get riscv32-unknown-elf toolchain (prebuilt)
+
+#### Flow
+1. Bender installed in WSL. Worked for repository init (windows throws a warning to do it in WSL memory region due to many IOs but it completes in less than a minute so not a problem)
+2. riscv 32 also installed in wsl `build_test` works (produces hex file) WHERE IS THE TOOLCHAIN FROM??
+3. test_ss works 
+
+
+### Next
+On Windows:
+- Get test_all running
+- Get fpga flow running 
