@@ -69,7 +69,7 @@ module pixel_acc #(
     
 
     // ---- FSM ----
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
             state      <= IDLE;
             rd_addr    <= '0;

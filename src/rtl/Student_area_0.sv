@@ -161,7 +161,7 @@ pixel_acc #(
 // ============================================================
 // APB register file + control FSM
 // ============================================================
-always_ff @(posedge clk_in) begin
+always_ff @(posedge clk_in or negedge rst) begin
     if (~rst) begin
         PREADY         <= 1'b0;
         PSLVERR        <= 1'b0;
