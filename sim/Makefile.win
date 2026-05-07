@@ -1,134 +1,63 @@
 ########################################
 # Sim makefile - Windows
-# Questa runs natively; bender runs via WSL.
+# Questa targets delegate to Makefile (which uses SHELL=bash).
+# Windows-only targets: env (CMD mkdir), gen_flist/gen_includes (PowerShell).
 ########################################
 
-WSL = wsl
-
-BUILD_DIR ?= $(CURDIR)\..\build
-START_TIME = $(shell powershell -Command "Get-Date -Format 'yyyy-MM-dd_HH:mm'")
 SHELL = cmd
 
-DUT     = tb_didactic
-SS_TB   = tb_student_ss
-
-# By default use fastest available UART
-FAST_UART ?= 1
+BUILD_DIR      ?= $(CURDIR)\..\build
+BUILD_DIR_FWD   = $(subst \,/,$(BUILD_DIR))
+TESTCASE       ?= blink
+SANITY_CHECK   ?= 0
+FAST_UART      ?= 1
 SIM_UART_MODEL ?= 1
-BYPASS_UART ?= 0
+BYPASS_UART    ?= 0
+GUI            ?= -c
 
-UART_DEFINE        = $(if $(filter 1,$(FAST_UART)),+define+SIM_FAST_UART,)
-UART_MODEL_DEFINE  = $(if $(filter 1,$(SIM_UART_MODEL)),+define+SIM_UART_MODEL,)
-BYPASS_UART_DEFINE = $(if $(filter 1,$(BYPASS_UART)),+define+BYPASS_UART,)
+# Single delegation point: all Questa targets call $(QUESTA) <target>
+QUESTA = $(MAKE) -f Makefile \
+	BUILD_DIR=$(BUILD_DIR_FWD) \
+	TESTCASE=$(TESTCASE) \
+	SANITY_CHECK=$(SANITY_CHECK) \
+	FAST_UART=$(FAST_UART) \
+	SIM_UART_MODEL=$(SIM_UART_MODEL) \
+	BYPASS_UART=$(BYPASS_UART) \
+	GUI=$(GUI)
 
-TB_DEFINES = \
-	+define+USE_UART \
-	+define+USE_SPI \
-	$(UART_DEFINE) \
-	$(UART_MODEL_DEFINE) \
-	$(BYPASS_UART_DEFINE)
-
-# Dut defines:
-# * RVFi required by tracer
-# * Synthesis disables verification assertions within
-# pulp / ibex codes
-DUT_DEFINES = \
-	+define+RVFI \
-	+define+INC_ASSERT \
-
-DUT_LIBS  = -L $(BUILD_DIR)\didactic_lib
-
-# vsim-8386: suppress bit-to-reg assignment errors
-VSIM_OPTS = -suppress vsim-3009 -suppress vsim-8386
-VOPT_OPTS = -sv -O5 -suppress vopt-2577 +acc
-# vlog-2244: tracer Variable implicitly static
-VLOG_OPTS = -svinputport=compat -suppress vlog-2583 -suppress vlog-2244
-VOPT_OPTS_FAST = $(filter-out +acc,$(VOPT_OPTS))
-
-GUI ?= -c
-
-# bender runs in WSL; capture the file list into a temp file
-WSL_ROOT = $(shell $(WSL) wslpath '$(CURDIR)/..')
-SIM_FLIST_WSL = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender script flist -t rtl -t vendor -t simulation -t tracer -t didactic_obi")
-
-# Include paths — resolved via WSL bender paths
-COMMON_CELLS_DIR = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender path common_cells")
-AXI_DIR          = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender path axi")
-APB_DIR          = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender path apb")
-REGIF_DIR        = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender path register_interface")
-OBI_DIR          = $(shell $(WSL) bash -c "cd $(WSL_ROOT) && bender path obi")
-IBEX_DIR         = $(WSL_ROOT)/../vendor_ips/ibex
-
-INCLUDES = \
-	+incdir+$(COMMON_CELLS_DIR)/include \
-	+incdir+$(AXI_DIR)/include \
-	+incdir+$(APB_DIR)/include \
-	+incdir+$(REGIF_DIR)/include \
-	+incdir+$(OBI_DIR)/include \
-	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/dv/sv/dv_utils \
-	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/ip/prim/rtl \
-	+incdir+$(IBEX_DIR)/rtl
-
-SANITY_CHECK ?= 0
-TESTCASE     ?= blink
-
+# ============================================================
+# Build directory creation
+# ============================================================
 env:
 	if not exist "$(BUILD_DIR)\logs\compile" mkdir "$(BUILD_DIR)\logs\compile"
 	if not exist "$(BUILD_DIR)\logs\opt"     mkdir "$(BUILD_DIR)\logs\opt"
 	if not exist "$(BUILD_DIR)\logs\sim"     mkdir "$(BUILD_DIR)\logs\sim"
+	if not exist "stdout"      mkdir stdout
+	if not exist "stdout\uart" type nul > stdout\uart
 
-library_mapping:
-	vmap didactic_lib $(BUILD_DIR)\didactic_lib
-
+# ============================================================
+# Questa targets — delegate to Makefile
+# ============================================================
 compile: env
-	vlib $(BUILD_DIR)\didactic_lib
-	vmap didactic_lib $(BUILD_DIR)\didactic_lib
-	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(INCLUDES) $(DUT_LIBS) \
-	$(VLOG_OPTS) $(SIM_FLIST_WSL) -l $(BUILD_DIR)\logs\compile\$(START_TIME)_didactic.log
-ifeq ($(SIM_UART_MODEL),1)
-	vlog -sv -work didactic_lib $(VLOG_OPTS) ..\src\tb\apb_uart_sim.sv
-endif
+	$(QUESTA) compile_didactic
 
-elaborate: library_mapping
-	vopt $(DUT_LIBS) $(VOPT_OPTS) \
-	-gDM_SANITY_TESTCASES=$(SANITY_CHECK) -gTESTCASE=$(TESTCASE) \
-	-work $(BUILD_DIR)\didactic_lib $(DUT) -o $(DUT)_opt \
-	-l $(BUILD_DIR)\logs\opt\$(START_TIME)_vopt.log
+elaborate:
+	$(QUESTA) elaborate
 
-elaborate_fast: library_mapping
-	vopt $(DUT_LIBS) $(VOPT_OPTS_FAST) \
-	-gDM_SANITY_TESTCASES=$(SANITY_CHECK) -gTESTCASE=$(TESTCASE) \
-	-work $(BUILD_DIR)\didactic_lib $(DUT) -o $(DUT)_opt \
-	-l $(BUILD_DIR)\logs\opt\$(START_TIME)_vopt.log
+elaborate_fast:
+	$(QUESTA) elaborate_fast
 
-run_sim: library_mapping
-	if not exist "stdout" mkdir stdout
-	type nul > stdout\uart
-	vsim $(GUI) $(DUT_LIBS) $(VSIM_OPTS) \
-	-work $(BUILD_DIR)\didactic_lib $(DUT)_opt \
-	$(if $(filter -c,$(GUI)),-do "run -all;",-do "do wave.do; do mem.do; run -all;") \
-	-l $(BUILD_DIR)\logs\sim\$(START_TIME)_sim.log
-
-# ============================================================
-# Isolated Student_area_0 testbench
-# ============================================================
-SS_TB_SRC = ..\src\tb\tb_student_ss.sv ..\src\rtl\Student_area_0.sv ..\src\rtl\pixel_acc.sv
+run_sim: env
+	$(QUESTA) run_sim
 
 compile_ss: env
-	vlib $(BUILD_DIR)\didactic_lib
-	vmap didactic_lib $(BUILD_DIR)\didactic_lib
-	vlog -sv -work didactic_lib $(VLOG_OPTS) $(SS_TB_SRC) \
-	-l $(BUILD_DIR)\logs\compile\$(START_TIME)_ss.log
+	$(QUESTA) compile_ss
 
-elaborate_ss: library_mapping
-	vopt $(DUT_LIBS) $(VOPT_OPTS) \
-	-work $(BUILD_DIR)\didactic_lib $(SS_TB) -o $(SS_TB)_opt \
-	-l $(BUILD_DIR)\logs\opt\$(START_TIME)_ss_vopt.log
+elaborate_ss:
+	$(QUESTA) elaborate_ss
 
-run_ss: library_mapping
-	vsim $(GUI) $(DUT_LIBS) $(VSIM_OPTS) \
-	-work $(BUILD_DIR)\didactic_lib $(SS_TB)_opt \
-	$(if $(filter -c,$(GUI)),-do "run -all;",-do "do wave_ss.do; run -all;") \
-	-l $(BUILD_DIR)\logs\sim\$(START_TIME)_ss_sim.log
+run_ss:
+	$(QUESTA) run_ss
 
-sim_ss: compile_ss elaborate_ss run_ss
+sim_ss:
+	$(QUESTA) sim_ss

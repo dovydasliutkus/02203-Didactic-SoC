@@ -9,6 +9,8 @@
 
 [sw:risk] Setting baudrate for UART need to check if it can be divided in a clean way from the system frequency.
 
+[sw:risk] File lists are generated on linux and added to the repo there shouldn't be a need to regenerated, but if there is it should be done on a Linux machine, because linux paths will still work with Questa and Vivado.
+
 ## TODO
 
 - mem init with bitstream (openocd will be hard on windows) but leave jtag as an option
@@ -150,19 +152,25 @@ Use BRAM for both `ibuf` and `obuf`
 - Added TODOs in the lab guide.
 
 ## 2026-05-04
-### Discuss
-- make for sw can be run from `sw/` or `fpga/sw/` this is not very clean. Could make it more simple from top make. however sim and fpga applications are different (blinky, pixel_inversion). Keep as is.
-
 ### Did
 - Submodule for `pixel_acc` to give students a minimal working document (not to scare with `Student_area_0.sv`). full system testbenches successfully inverts pixels.
 - Work on compatability for windows
 
+## 2026-05-07
+### Did
+- Chose to switch to `riscv64-unknown-elf` toolchain that is available on Ubuntu package manager (on WSL aswell)
+- Fix sw build post-processing because riscv64 outputs binaries where the byte count is not necessarily divisible by 4.
+- Generate file list and include list in Linux Makefile to remove bender as a software requirement. (Windows doesn't generate bender correctly) 
+- Also add .bender/ to repo
+- Fix async reset bug in SS. Reset happens before clock is enabled so need async reset (or change the software driver).
+- Simplify `sim/Makefile.win` to delegate targets to `sim/Makefile` so we don't have repetitive commands in two Makefiles.
 
 #### Software setup for Windows
 1. Install make. For Windows users recommend Chocolatey package manager (Download here https://chocolatey.org/install). Then run `choco install make`
 2. Install Questa from the given link (for Windows or Linux). Get a license in licensing.altera.com will need to create an account choose fixed and enter NIC ID (MAC address) here. Create an enivornment variable `SALT_LICENSE_FILE` which points to the license `.dat` file.
 3. Install WSL2 if you don't have it already
-4. get riscv32-unknown-elf toolchain (prebuilt)
+4. Get the riscv toolchain for both Linux and Windows: `sudo apt install gcc-riscv64-unknown-elf`
+
 
 #### Flow
 1. Bender installed in WSL. Worked for repository init (windows throws a warning to do it in WSL memory region due to many IOs but it completes in less than a minute so not a problem)

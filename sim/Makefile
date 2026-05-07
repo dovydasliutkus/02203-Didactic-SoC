@@ -61,31 +61,38 @@ VLOG_OPTS = \
 	-suppress vlog-2583 \
 	-suppress vlog-2244 \
 
-BENDER ?= bender
+FLIST      = flist.f
+INCLUDES_F = includes.f
 
-COMMON_CELLS_DIR ?= $(shell $(BENDER) path common_cells)
-AXI_DIR          ?= $(shell $(BENDER) path axi)
-APB_DIR          ?= $(shell $(BENDER) path apb)
-REGIF_DIR        ?= $(shell $(BENDER) path register_interface)
-OBI_DIR          ?= $(shell $(BENDER) path obi)
-IBEX_DIR         ?= $(BUILD_DIR)/../vendor_ips/ibex
+# ============================================================
+# File-list generation (file lists included in repo)
+# Requires: bender on PATH
+# ============================================================
+gen_flist:
+	ROOT=$$(realpath ..); \
+	bender script flist -t rtl -t vendor -t simulation -t tracer -t didactic_obi | \
+	sed "s|$$ROOT/|../|g" > flist.f
 
-SIM_FLIST        ?= $(shell $(BENDER) script flist -t rtl -t vendor -t simulation -t tracer -t didactic_obi)
+gen_includes:
+	ROOT=$$(realpath ..); \
+	{ for dep in common_cells axi apb register_interface obi; do \
+	    path=$$(bender path $$dep); \
+	    echo "+incdir+../$${path#$$ROOT/}/include"; \
+	  done; \
+	  echo "+incdir+../vendor_ips/ibex/vendor/lowrisc_ip/dv/sv/dv_utils"; \
+	  echo "+incdir+../vendor_ips/ibex/vendor/lowrisc_ip/ip/prim/rtl"; \
+	  echo "+incdir+../vendor_ips/ibex/rtl"; \
+	} > includes.f
 
-INCLUDES ?= \
-	+incdir+$(COMMON_CELLS_DIR)/include \
-	+incdir+$(AXI_DIR)/include \
-	+incdir+$(APB_DIR)/include \
-	+incdir+$(REGIF_DIR)/include \
-	+incdir+$(OBI_DIR)/include \
-	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/dv/sv/dv_utils \
-	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/ip/prim/rtl \
-	+incdir+$(IBEX_DIR)/rtl
+# ============================================================
+# Build directory creation
+# ============================================================
 
 env:
 	mkdir -p $(BUILD_DIR)/logs/compile
 	mkdir -p $(BUILD_DIR)/logs/opt
 	mkdir -p $(BUILD_DIR)/logs/sim
+	mkdir -p stdout && touch stdout/uart
 
 library_mapping: 
 	cd $(BUILD_DIR)
@@ -100,8 +107,8 @@ SIM_UART_MODEL ?= 0
 compile_didactic:
 	vlib $(BUILD_DIR)/didactic_lib
 	vmap didactic_lib $(BUILD_DIR)/didactic_lib
-	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(INCLUDES) $(DUT_LIBS) \
-	$(VLOG_OPTS) $(SIM_FLIST) -l $(BUILD_DIR)/logs/compile/$(START_TIME)_didactic.log
+	vlog -sv -work didactic_lib $(DUT_DEFINES) $(TB_DEFINES) $(DUT_LIBS) \
+	$(VLOG_OPTS) -f $(FLIST) -f $(INCLUDES_F) -l $(BUILD_DIR)/logs/compile/$(START_TIME)_didactic.log
 ifeq ($(SIM_UART_MODEL),1)
 	@echo "[sim] Compiling fast behavioral UART model (overrides apb_uart)"
 	vlog -sv -work didactic_lib $(VLOG_OPTS) \
@@ -140,7 +147,6 @@ elaborate_fast: library_mapping
 	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_vopt.log
 
 run_sim: library_mapping
-	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
 	vsim $(GUI) \
 	$(DUT_LIBS) $(VSIM_OPTS) \

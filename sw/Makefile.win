@@ -7,7 +7,7 @@
 WSL      = wsl
 TESTCASE ?= blink
 BUILD_DIR ?= $(CURDIR)/../build
-XLEN     ?= 32
+XLEN     ?= 64
 PREFIX   ?= riscv$(XLEN)-unknown-elf
 
 FAST_UART   ?= 1

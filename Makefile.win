@@ -13,6 +13,8 @@
 
 # Run a command inside WSL, passing Windows-style BUILD_DIR converted to WSL path
 WSL = wsl
+START_TIME = $(shell powershell -Command "Get-Date -Format 'yyyy-MM-dd_HH-mm'")
+SHELL = cmd
 
 # Convert Windows path to WSL path: C:\foo\bar -> /mnt/c/foo/bar
 # We use wsl itself to do the conversion at runtime

@@ -5,18 +5,99 @@ This laboratory exercise extends the existing image processing accelerator lab b
 
 The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware–software co-design.
 
+This lab supports Linux and Windows.
+
 ## Software requirements
 
-1. Make
-2. Questa Starter Edition [Link to download](https://www.altera.com/downloads/simulation-tools/questa-fpgas-standard-edition-software-version-25-1)
-3. riscv32-unknown-elf toolchain
-4. Vivado
-5. Python 3 with `pyserial`, `Pillow`, and `appJar` packages (`python3-tk` also required)
-6. (Optional) OpenOCD for JTAG debugging
+| # | Tool | Notes |
+|---|------|-------|
+| 1 | Make | Windows: install via Chocolatey |
+| 2 | Questa Starter Edition | Simulation |
+| 3 | WSL2 | Windows only |
+| 4 | `riscv64-unknown-elf` toolchain | Cross-compiler |
+| 5 | Vivado | FPGA synthesis and implementation |
+| 6 | Python 3 | Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
+| 7 | OpenOCD (Optional) | JTAG debugging |
 
-🔴 TODO:  Add guides how to install everything
+## Software setup guide
 
-[Questa Quick-Start Guide](https://www.intel.com/programmable/technical-pdfs/703090.pdf)
+### 1. Make
+
+**Linux:** Make is typically pre-installed. If not: `sudo apt install make`
+
+**Windows:** Install via [Chocolatey](https://chocolatey.org/install), then run:
+```
+choco install make
+```
+
+Verify with `make --version`.
+
+### 2. Questa Starter Edition
+
+Download from the [Altera download center](https://www.altera.com/downloads/simulation-tools/questa-fpgas-standard-edition-software-version-25-1) (available for both Linux and Windows).
+
+To get a free license:
+1. Go to the [Self Service Licensing Center](https://www.altera.com/SSLC) and create an account.
+2. Choose **Sign up for Evaluation or No-Cost Licenses** and select **Questa FPGA Starter Edition**.
+3. Set License Type to **FIXED** and enter your NIC ID (MAC address) as the Primary Computer ID.
+4. You will receive an email with a `.dat` license file.
+5. Set the environment variable `SALT_LICENSE_FILE` to point to that file.
+
+First time using Questa? Glance over the guide: [Questa Quick-Start Guide](https://www.intel.com/programmable/technical-pdfs/703090.pdf)
+
+### 3. WSL2 (Windows only)
+
+Follow the [official WSL installation guide](https://documentation.ubuntu.com/wsl/stable/#1-overview).
+
+### 4. RISC-V toolchain
+
+Inside WSL (or on Linux):
+```
+sudo apt install gcc-riscv64-unknown-elf
+```
+
+### 5. Vivado
+
+**Windows:** See installation guide on DTU Learn.
+
+**Linux:**
+
+<!-- 1. Download the **Vivado ML Edition** installer (Linux `.bin`) from the [AMD downloads page](https://www.xilinx.com/support/download.html). Select the latest 2024.x release and choose *AMD Unified Installer for FPGAs & Adaptive SoCs*.
+
+2. Make the installer executable and run it:
+   ```
+   chmod +x FPGAs_AdaptiveSoCs_Unified_<version>_Lin64.bin
+   sudo ./FPGAs_AdaptiveSoCs_Unified_<version>_Lin64.bin
+   ```
+
+3. In the installer GUI, select **Vivado** (not Vitis), then **Vivado ML Standard** (free edition). When choosing devices, selecting only *7 Series* is sufficient for this lab and keeps the download size manageable.
+
+4. After installation, add Vivado to your PATH by sourcing its settings script. Add the following line to your `~/.bashrc`:
+   ```
+   source /tools/Xilinx/Vivado/<version>/settings64.sh
+   ```
+   Then reload: `source ~/.bashrc`
+
+5. Verify with `vivado -version`.
+
+> **Note:** The installer requires ~60 GB of disk space for a full install. A 7 Series-only install is roughly 20 GB. -->
+
+### 6. OpenOCD (Optional)
+
+OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA board. Since the bitstream already initialises instruction memory, OpenOCD is not needed for basic testing - it becomes useful if you want to step through code, inspect registers, or reload software without re-programming the FPGA.
+
+**Linux:**
+
+```
+sudo apt install openocd
+```
+
+Verify with `openocd --version`.
+
+**Windows:** Pre-built binaries are available from [xPack OpenOCD](https://xpack.github.io/openocd/). Download the latest release, extract it, and add the `bin/` directory to your PATH.
+
+
+
 ## Overview
 
 🔴 TODO:  Add overview of Didactic-SoC
@@ -115,20 +196,24 @@ The CPU C code:
 **Task: Review the C code `sw/pixel_inversion/pixel_inversion.c`** 
 
 
+> **Windows:** replace `make` with `make -f Makefile.win` for all commands below.
+
 Build the C code to produce a .hex file that can be used to initialize the instruction memory of the CPU:
 ```
 make build_test TEST=pixel_inversion
 ```
+
 For curiosity or debugging purposes you may look at the assembly dump in `build/sw/pixel_inversion.asm`.
 
 Run the full Didactic-SoC simulation with
 ```
-make test_all TEST=pixel_inversion 
-``` 
+make test_all TEST=pixel_inversion
+```
 To run with GUI:
 ```
-make test_all_gui TEST=pixel_inversion 
+make test_all_gui TEST=pixel_inversion
 ```
+
 This simulation will take about 18 mins in batch mode and more with GUI mode. 
 
 Even though a simplified UART model is used, it takes 20 cycles to send 1 byte (2 cycles per bit, including start and stop bits). The test transfers 101376 bytes (352×288 pixels), which equates to 101376×20 = 2.03e6 cycles. With each cycle taking 10 ns (100 MHz), the test covers 20.3 ms of simulation time.
