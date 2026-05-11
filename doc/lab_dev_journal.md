@@ -247,3 +247,5 @@ usbipd detach --hardware-id 0403:6010
 
 Vivado can program the board again immediately after this.
 
+### Next
+- Initialize software with the bitstream
