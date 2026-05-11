@@ -80,11 +80,11 @@ See installation guide on DTU Learn.
 
 > **Note:** The installer requires ~60 GB of disk space for a full install. A 7 Series-only install is roughly 20 GB. -->
 
-### 6. OpenOCD (Optional)
+### 6. On-hardware debugging OpenOCD and gdb-multiarch (Optional)
 
 OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA board. Since the bitstream already initialises instruction memory, OpenOCD is not needed for basic testing - it becomes useful if you want to step through code, inspect registers, or reload software without re-programming the FPGA.
+ `gdb-multiarch` is the multi-architecture gdb version that supports RISC-V debugging.
 
-Also need `gnu-multiarch` The multiarchitecture gdb version that supports RISC-V debugging.
 **Linux (Ubuntu):**
 
 ```
@@ -94,7 +94,21 @@ sudo apt install openocd
 
 Verify with `gdb-multiarch --version` and `openocd --version`.
 
-**Windows:** Pre-built binaries are available from [xPack OpenOCD](https://xpack.github.io/openocd/). Download the latest release, extract it, and add the `bin/` directory to your PATH.
+**Windows:** 
+
+#### Step 1 - Install MSYS2
+
+Download and run the installer from [msys2.org](https://www.msys2.org). Use the **MINGW64** environment for all commands below.
+
+#### Step 2 - Install OpenOCD and GDB (inside MSYS2 MINGW64)
+
+```bash
+pacman -S mingw-w64-x86_64-openocd mingw-w64-x86_64-riscv64-unknown-elf-gdb
+```
+
+#### Step 3 - Zadig for switching out the FTDI driver
+
+Download [Zadig](https://zadig.akeo.ie). 
 
 
 
@@ -129,8 +143,6 @@ Firstly, compile C code by running the following make command from project root 
 ```
 make build_test TEST=pixel_inversion
 ```
-
-🔴 TODO: Add bender dependencies to repo so students don't have to install it
 
 Try to run a testbench in batch mode with
 
@@ -247,6 +259,8 @@ To open the Vivado project with the GUI - launch Vivado then choose "Open Projec
 
 To upload code to the CPU in the Didactic-SoC, first start an OpenOCD server. OpenOCD acts as a bridge between the GNU Debugger (GDB) and the physical JTAG interface.
 
+#### Linux
+
 ```
 openocd -f fpga/utils/openocd-didactic-nexys.cfg
 ```
@@ -256,7 +270,37 @@ Then from `fpga/`, upload the program with
 make load_elf TEST=pixel_inversion
 ```
 
+This will start GDB. 
+🔴 TODO: Copy-paste the useful commands from vjtag_doc.md
 ...
+
+#### Windows
+
+All commands below run inside the **MSYS2 MINGW64** terminal.
+
+**1. Switch the FTDI driver**
+
+Open Zadig after flashing the bitstream onto the FPGA:
+1. Options -> List All Devices
+2. Select **Digilent USB Device (Interface 0)**
+3. Set driver to **WinUSB** -> Install Driver
+
+> **Restoring Vivado's programmer:** Open Device Manager -> Universal Serial Bus devices -> right-click **Digilent USB Device** -> Uninstall device. Unplug and replug the board — Windows will reinstall the default `FTDIBUS` driver automatically.
+
+**2. Start OpenOCD** (leave this terminal open)
+
+From the `fpga/` directory:
+```bash
+openocd -f utils/openocd-didactic-nexys.cfg
+```
+Wait for `Ready for Remote Connections`.
+
+**3. Flash the ELF** (second MSYS2 terminal)
+
+```bash
+gdb-multiarch ../build/fpga/sw/<test>.elf -x utils/connect-and-load.gdb
+```
+
 
 
 # Draft space (old stuff)

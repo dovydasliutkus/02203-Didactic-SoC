@@ -29,5 +29,19 @@ build_test: check_env
 		TESTCASE=$(TEST) \
 		test
 
-load_elf: check_env
-	gdb-multiarch $(BUILD_DIR)\fpga\sw\$(TEST).elf -x utils\connect-and-load.gdb
+# # Attach Nexys A7 USB to WSL2 (once per Windows session; usbipd bind must have
+# # been run as admin once before this will work).
+# usbipd_attach:
+# 	usbipd attach --wsl --hardware-id 0403:6010
+
+# # Use this target to dettach before programing Bitstream
+# usbipd_detach:
+# 	usbipd detach --hardware-id 0403:6010
+
+# # Run OpenOCD inside WSL (blocking — open a second terminal for load_elf).
+# start_openocd:
+# 	$(WSL) sudo openocd -d2 -f $(shell $(WSL) wslpath '$(CURDIR)')/utils/openocd-didactic-nexys.cfg
+
+# load_elf: check_env
+# 	$(WSL) gdb-multiarch $(shell $(WSL) wslpath '$(BUILD_DIR)')/fpga/sw/$(TEST).elf \
+# 		-x $(shell $(WSL) wslpath '$(CURDIR)')/utils/connect-and-load.gdb

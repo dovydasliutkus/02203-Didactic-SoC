@@ -172,3 +172,78 @@ On Windows:
 ### Did
 - (On Win) make build_test works from 'fpga/'
 - (On Win) make load_elf works through MSYS2 with gdb-multiarch
+
+
+### Hardware debugging with Windows and WSL2
+
+**Current state:** Manage to start OpenOCD server after `usbipd attach`. Then `Make load_elf` runs slowly and gets packet errors, blinky doesn't work. Using all the same files through MSYS2 works. Proabably abandon WSL way and require MSYS2 installation.
+
+#### Step 1 — Install usbipd-win (Windows, needs admin)
+
+Open **PowerShell as Administrator** and run:
+```powershell
+winget install --interactive --exact dorssel.usbipd-win
+```
+Follow the installer. **Reboot when done.**
+
+#### Step 2 — Bind the Nexys A7 (admin, one-time per machine)
+
+Plug in the Nexys A7. Then in **PowerShell as Administrator**:
+```powershell
+usbipd list
+```
+Find the line that says something like `Digilent USB Device` with hardware-id `0403:6010`. Then:
+```powershell
+usbipd bind --hardware-id 0403:6010
+```
+You only ever do this once. After this, binding survives reboots.
+
+#### Step 3 — Install tools inside WSL (one-time)
+
+Open your Ubuntu WSL terminal:
+```bash
+sudo apt update
+sudo apt install openocd gdb-multiarch
+```
+
+Verify:
+```bash
+openocd --version
+gdb-multiarch --version
+```
+
+#### Step 4 — Attach the board to WSL (each session, no admin needed)
+
+From any normal Windows terminal (or `make -f Makefile.win usbipd_attach`):
+```
+usbipd attach --wsl --hardware-id 0403:6010
+```
+
+Verify it landed in WSL:
+```bash
+lsusb   # should show "Future Technology Devices International" or "Digilent"
+```
+
+#### Step 5 — Start OpenOCD
+
+In a Windows terminal, from the `fpga/` directory:
+```
+make -f Makefile.win start_openocd
+```
+A new window opens running OpenOCD inside WSL. You should see `JTAG Chain dump` and `Ready for Remote Connections`. **Leave it open.**
+
+#### Step 6 — Flash the ELF
+
+In another terminal (after `build_test` has built your firmware):
+```
+make -f Makefile.win load_elf TEST=blink
+```
+
+#### When done — give USB back to Vivado
+
+```
+usbipd detach --hardware-id 0403:6010
+```
+
+Vivado can program the board again immediately after this.
+
