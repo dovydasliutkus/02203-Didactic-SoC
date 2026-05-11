@@ -23,9 +23,9 @@ This lab supports Linux and Windows.
 
 ### 1. Make
 
-**Linux:** Make is typically pre-installed. If not: `sudo apt install make`
+**Linux:** Make is typically pre-installed.
 
-**Windows:** Install via [Chocolatey](https://chocolatey.org/install), then run:
+**Windows:** Install via [Chocolatey](https://chocolatey.org/install) package manager, then run:
 ```
 choco install make
 ```
@@ -58,9 +58,7 @@ sudo apt install gcc-riscv64-unknown-elf
 
 ### 5. Vivado
 
-**Windows:** See installation guide on DTU Learn.
-
-**Linux:**
+See installation guide on DTU Learn.
 
 <!-- 1. Download the **Vivado ML Edition** installer (Linux `.bin`) from the [AMD downloads page](https://www.xilinx.com/support/download.html). Select the latest 2024.x release and choose *AMD Unified Installer for FPGAs & Adaptive SoCs*.
 
@@ -237,7 +235,7 @@ Note: There are two CPU programs - one in `sw/` for simulation and another in `f
 
 Synthesize and implement the design using **Vivado**. This can be done by running
 ```
-make fpga PROJECT=nexys_a7
+make fpga
 ```
 If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
 

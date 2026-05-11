@@ -10,16 +10,16 @@ WSL    = wsl
 VIVADO ?= vivado
 TEST   ?= blink
 
-BUILD_DIR ?= ..\build
-PROJECT   ?= nexys_a7
+export BUILD_DIR ?= $(CURDIR)/../build
+export PROJECT   ?= nexys_a7
 
 check_env:
 	if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 
-all_xilinx: check_env gen_includes
+all_xilinx: check_env
 	$(VIVADO) -mode batch -notrace -source scripts\run_xilinx.tcl
 
-all_xilinx_gui: check_env gen_includes
+all_xilinx_gui: check_env
 	start $(VIVADO) -mode gui -source scripts\run_xilinx.tcl
 
 # SW compiled inside WSL

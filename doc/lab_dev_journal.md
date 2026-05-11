@@ -161,10 +161,13 @@ Use BRAM for both `ibuf` and `obuf`
 - Chose to switch to `riscv64-unknown-elf` toolchain that is available on Ubuntu package manager (on WSL aswell)
 - Fix sw build post-processing because riscv64 outputs binaries where the byte count is not necessarily divisible by 4.
 - Generate file list and include list in Linux Makefile to remove bender as a software requirement. (Windows doesn't generate bender correctly) 
-- Also add .bender/ to repo
 - Fix async reset bug in SS. Reset happens before clock is enabled so need async reset (or change the software driver).
 - Simplify `sim/Makefile.win` to delegate targets to `sim/Makefile` so we don't have repetitive commands in two Makefiles.
 
 ### Next
 On Windows:
 - Get fpga flow running 
+
+## 2026-05-11
+### Did
+- (On Win) make build_test works from 'fpga/'

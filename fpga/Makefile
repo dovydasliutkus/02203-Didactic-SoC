@@ -11,7 +11,7 @@ VIVADO ?= vivado
 TEST ?= blink
 
 export BUILD_DIR ?= ../build
-export PROJECT ?= z1
+export PROJECT ?= nexys_a7
 
 check_env:
 	mkdir -p $(BUILD_DIR)

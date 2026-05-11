@@ -4,9 +4,16 @@
 # Contributor(s):
 #   -Matti Käyrä (matti.kayra@tuni.fi)
 #   -Thomas Szymkoviak
+#   -Dovydas Liutkus (dovli@dtu.dk)
 ####
-set CPUS [exec getconf _NPROCESSORS_ONLN]
-if { ![info exists CPUS] } {
+
+# Pass all available cores to Vivado
+if {$tcl_platform(platform) eq "windows"} {
+  set CPUS $::env(NUMBER_OF_PROCESSORS)
+} else {
+  catch {set CPUS [exec getconf _NPROCESSORS_ONLN]}
+}
+if { ![info exists CPUS] || $CPUS eq "" } {
   set CPUS 4
 }
 #
@@ -27,7 +34,7 @@ if { $PROJECT eq "z1" } {
   break
 }
 
-set DIR [exec pwd]
+set DIR [file normalize .]
 
 create_project didactic-$PROJECT ../build/fpga/$PROJECT -force -part $XILINX_PART
 
@@ -113,7 +120,7 @@ wait_on_run impl_1
 open_run impl_1
 
 # Generate reports
-exec mkdir -p $BUILD_DIR/fpga/logs/
+file mkdir $BUILD_DIR/fpga/logs/
 
 check_timing                                                          -file $BUILD_DIR/fpga/logs/$PROJECT.check_timing.rpt
 report_timing -max_paths 50 -nworst 50 -delay_type max -sort_by slack -file $BUILD_DIR/fpga/logs/$PROJECT.timing_WORST_50.rpt
