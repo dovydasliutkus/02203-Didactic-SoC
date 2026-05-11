@@ -84,13 +84,15 @@ See installation guide on DTU Learn.
 
 OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA board. Since the bitstream already initialises instruction memory, OpenOCD is not needed for basic testing - it becomes useful if you want to step through code, inspect registers, or reload software without re-programming the FPGA.
 
-**Linux:**
+Also need `gnu-multiarch` The multiarchitecture gdb version that supports RISC-V debugging.
+**Linux (Ubuntu):**
 
 ```
+sudo apt install gdb-multiarch
 sudo apt install openocd
 ```
 
-Verify with `openocd --version`.
+Verify with `gdb-multiarch --version` and `openocd --version`.
 
 **Windows:** Pre-built binaries are available from [xPack OpenOCD](https://xpack.github.io/openocd/). Download the latest release, extract it, and add the `bin/` directory to your PATH.
 

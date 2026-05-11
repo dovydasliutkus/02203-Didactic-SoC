@@ -30,4 +30,4 @@ build_test: check_env
 		test
 
 load_elf: check_env
-	riscv32-unknown-elf-gdb $(BUILD_DIR)\fpga\sw\$(TEST).elf -x utils\connect-and-load.gdb
+	gdb-multiarch $(BUILD_DIR)\fpga\sw\$(TEST).elf -x utils\connect-and-load.gdb

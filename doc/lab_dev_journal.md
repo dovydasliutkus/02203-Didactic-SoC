@@ -171,3 +171,4 @@ On Windows:
 ## 2026-05-11
 ### Did
 - (On Win) make build_test works from 'fpga/'
+- (On Win) make load_elf works through MSYS2 with gdb-multiarch
