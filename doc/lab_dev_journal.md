@@ -16,8 +16,7 @@
 - mem init with bitstream (openocd will be hard on windows) but leave jtag as an option
 - cleanup Student_area_0.sv
 - finalize lab description
-- Remove the need for bender or figure simple way for students to use it
-- Compatability for windows :(
+- Replace the project README, maybe with DoD_lab_plan.md or just a short version.
   
 In the final stages:
 -  Delete all redundant code like the BYPASS_UART and FAST_UART ifdef statements (Only leave the real UART as an option)

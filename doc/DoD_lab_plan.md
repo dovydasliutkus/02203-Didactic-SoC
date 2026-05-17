@@ -5,18 +5,18 @@ This laboratory exercise extends the existing image processing accelerator lab b
 
 The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware–software co-design.
 
-This lab supports Linux and Windows.
+This lab supports Linux and Windows operating systems. For Linux the commands are given and were tested on a Ubuntu 24.04 LTS system.
 
 ## Software requirements
 
 | # | Tool | Notes |
 |---|------|-------|
-| 1 | Make | Windows: install via Chocolatey |
+| 1 | Make | Flow automation |
 | 2 | Questa Starter Edition | Simulation |
 | 3 | WSL2 | Windows only |
 | 4 | `riscv64-unknown-elf` toolchain | Cross-compiler |
 | 5 | Vivado | FPGA synthesis and implementation |
-| 6 | Python 3 | Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
+| 6 | Python 3 | For the PC side of the FPGA test. Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
 | 7 | OpenOCD (Optional) | JTAG debugging |
 
 ## Software setup guide
@@ -108,13 +108,20 @@ pacman -S mingw-w64-x86_64-openocd mingw-w64-x86_64-riscv64-unknown-elf-gdb
 
 #### Step 3 - Zadig for switching out the FTDI driver
 
-Download [Zadig](https://zadig.akeo.ie). 
+Install [Zadig](https://zadig.akeo.ie). 
 
 
 
 ## Overview
 
-🔴 TODO:  Add overview of Didactic-SoC
+<!-- Include parts of "Course-material-Didactic" below for system description-->
+The Didactic SoC architecture has two distinct functional sections: the management
+section, also called the staff section, and the student sections in which student subsystems are integrated.
+These sections are highlighted in the Figure below. 
+
+![Didactic-SoC architecture](figures/architecture.png)
+
+You may find a detailed description of the Didactic-SoC platform in `doc/the-didactic-soc-platform.md`.
 
 The Student Sub-System in `src/rtl/Student_area_0.sv` contains a simple pixel inversion accelerator. 
 
