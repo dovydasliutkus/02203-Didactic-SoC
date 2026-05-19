@@ -1,4 +1,6 @@
-module DidacticNexys_A7 (
+module DidacticNexys_A7 #(
+  parameter IMEM_INIT_FILE = ""
+) (
   // Interface: Clock
     input  wire                         clk_in,
 
@@ -36,6 +38,9 @@ module DidacticNexys_A7 (
   assign gpo = didactic.SystemControl_SS.i_pmod_mux.gpio_to_io;
 
 	assign leds = gpo;
+
+	// Propagate IMEM init file into the sp_sram instance 
+	defparam didactic.SystemControl_SS.SysCtrl_SS.i_imem.INIT_FILE = IMEM_INIT_FILE;
 
 	// Didactic-SoC top
 	Didactic didactic (

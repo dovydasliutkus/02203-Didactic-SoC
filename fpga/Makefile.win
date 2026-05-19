@@ -8,8 +8,8 @@
 SHELL  = cmd
 WSL    = wsl
 VIVADO ?= vivado
-TEST   ?= blink
 
+export TEST   ?= blink
 export BUILD_DIR ?= $(CURDIR)/../build
 export PROJECT   ?= nexys_a7
 

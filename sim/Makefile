@@ -162,14 +162,13 @@ run_sim: library_mapping
 SS_TB = tb_student_ss
 SS_TB_SRC = ../src/tb/tb_student_ss.sv ../src/rtl/Student_area_0.sv ../src/rtl/pixel_acc.sv
 
-compile_ss: env
+compile_ss:
 	vlib $(BUILD_DIR)/didactic_lib
 	vmap didactic_lib $(BUILD_DIR)/didactic_lib
 	vlog -sv -work didactic_lib $(VLOG_OPTS) $(SS_TB_SRC) \
 	-l $(BUILD_DIR)/logs/compile/$(START_TIME)_ss.log
 
 elaborate_ss: library_mapping
-	mkdir -p $(BUILD_DIR)/logs/opt
 	vopt \
 	$(DUT_LIBS) $(VOPT_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
@@ -178,7 +177,6 @@ elaborate_ss: library_mapping
 	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_ss_vopt.log
 
 run_ss: library_mapping
-	mkdir -p $(BUILD_DIR)/logs/sim
 	vsim $(GUI) \
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \

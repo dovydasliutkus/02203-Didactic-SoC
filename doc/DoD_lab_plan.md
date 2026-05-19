@@ -147,9 +147,11 @@ The generated `.pgm` file can be viewed using software such as **IrfanView** or 
 This task is meant for testing if you have correctly installed the required software and also to familiarize yourself with the SoC and the make automation that is used in the project. 
 
 Firstly, compile C code by running the following make command from project root directory `02203-Didactic-SoC/`
+
 ```
 make build_test TEST=pixel_inversion
 ```
+> **Windows:** replace `make` with `make -f Makefile.win` for all commands below.
 
 Try to run a testbench in batch mode with
 
@@ -214,9 +216,6 @@ The CPU C code:
 
 **Task: Review the C code `sw/pixel_inversion/pixel_inversion.c`** 
 
-
-> **Windows:** replace `make` with `make -f Makefile.win` for all commands below.
-
 Build the C code to produce a .hex file that can be used to initialize the instruction memory of the CPU:
 ```
 make build_test TEST=pixel_inversion
@@ -261,6 +260,8 @@ make fpga
 If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
 
 To open the Vivado project with the GUI - launch Vivado then choose "Open Project" and select `build/fpga/nexys_a7/didactic-nexys_a7.xpr` file.
+
+You may use the `Hardware Manager` in Vivado GUI for uploading the bitstream. The bitstream also contains memory initialization commands so after bitstream flashing the CPU program will start executing instantly.
 
 ### 4. Program and debug over JTAG (Optional)
 

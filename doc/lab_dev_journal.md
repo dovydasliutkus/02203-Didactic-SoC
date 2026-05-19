@@ -246,5 +246,15 @@ usbipd detach --hardware-id 0403:6010
 
 Vivado can program the board again immediately after this.
 
+ABANDONED IDEA OF DEBUGGING THROUGH WSL usbipd seems to be too slow.
+
 ### Next
 - Initialize software with the bitstream
+
+## 2026-05-19
+### Did
+- Added software initialization through bitstream (tested on Windows - works)
+- Also tried to reprogram with JTAG - works
+
+### Next
+- Add DMEM initialization in tb and also in FPGA with bitstream (in case students use initialized variables)
