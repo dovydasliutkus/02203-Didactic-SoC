@@ -263,7 +263,29 @@ To open the Vivado project with the GUI - launch Vivado then choose "Open Projec
 
 You may use the `Hardware Manager` in Vivado GUI for uploading the bitstream. The bitstream also contains memory initialization commands so after bitstream flashing the CPU program will start executing instantly.
 
-### 4. Program and debug over JTAG (Optional)
+### 4. Test with Python GUI
+Check if you have Python 3.12 on your system.
+```
+py -3.12 --version
+```
+If you don't have Python you can use the command below to install it or you can also get it from https://www.python.org/
+```
+winget install Python.Python.3.12
+```
+
+Create a virtual environment and install the required dependencies. For PowerShell, from `/fpga/serial_interface/` use:
+```
+py -3.12 -m venv .venv
+py -3.12 -m venv .venv
+pip install -r requirements.txt
+```
+then simply run the GUI:
+```
+python .\serial_interface.py
+```
+
+
+### 5. Program and debug over JTAG (Optional)
 
 To upload code to the CPU in the Didactic-SoC, first start an OpenOCD server. OpenOCD acts as a bridge between the GNU Debugger (GDB) and the physical JTAG interface.
 
