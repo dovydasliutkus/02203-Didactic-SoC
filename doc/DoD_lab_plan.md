@@ -1,7 +1,7 @@
 
 # Image processing accelerator with CPU data transport
 
-This laboratory exercise extends the existing image processing accelerator lab by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheralThe goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware-software co-design.
+This laboratory exercise extends the existing image processing accelerator lab by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheral. The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware-software co-design.
 
 This lab supports Linux and Windows operating systems. For Linux the commands are given and were tested on a Ubuntu 24.04 LTS system.
 
@@ -24,7 +24,7 @@ This lab supports Linux and Windows operating systems. For Linux the commands ar
 **Linux:** Make is typically pre-installed.
 
 **Windows:** Install via [Chocolatey](https://chocolatey.org/install) package manager, then run:
-```
+```bash
 choco install make
 ```
 
@@ -50,7 +50,7 @@ Follow the [official WSL installation guide](https://documentation.ubuntu.com/ws
 ### 4. RISC-V toolchain
 
 Inside WSL (or on Linux):
-```
+```bash
 sudo apt install gcc-riscv64-unknown-elf
 ```
 
@@ -85,7 +85,7 @@ OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA b
 
 **Linux (Ubuntu):**
 
-```
+```bash
 sudo apt install gdb-multiarch
 sudo apt install openocd
 ```
@@ -146,14 +146,14 @@ This task is meant for testing if you have correctly installed the required soft
 
 Firstly, compile C code by running the following make command from project root directory `02203-Didactic-SoC/`
 
-```
+```bash
 make build_test TEST=pixel_inversion
 ```
 > **Windows:** replace `make` with `make -f Makefile.win` for all commands below.
 
 Try to run a testbench in batch mode with
 
-```
+```bash
 make test_ss
 ```
 
@@ -162,7 +162,7 @@ This will run `src/tb/tb_student_ss.sv` testbench that simulates the standalone 
 The testbench reads an input PGM (set by the `src_image` parameter), drives the accelerator via an [APB](https://developer.arm.com/documentation/ihi0024/latest/) interface, and writes the processed result to a new PGM which can be found in `src/tb/out_images/`.
 
 You can also run the testbench with GUI, which will be useful when debugging your design
-```
+```bash
 make test_ss_gui
 ```
 
@@ -184,7 +184,7 @@ Using your ASMD chart and block diagram, implement the edge detection accelerato
 
 To test your design, run the following command from the project root:
 
-```
+```bash
 make test_ss
 ```
 
@@ -215,18 +215,18 @@ The CPU C code:
 **Task: Review the C code `sw/pixel_inversion/pixel_inversion.c`** 
 
 Build the C code to produce a .hex file that can be used to initialize the instruction memory of the CPU:
-```
+```bash
 make build_test TEST=pixel_inversion
 ```
 
 For curiosity or debugging purposes you may look at the assembly dump in `build/sw/pixel_inversion.asm`.
 
 Run the full Didactic-SoC simulation with
-```
+```bash
 make test_all TEST=pixel_inversion
 ```
 To run with GUI:
-```
+```bash
 make test_all_gui TEST=pixel_inversion
 ```
 
@@ -234,6 +234,13 @@ This simulation will take about 18 mins in batch mode and more with GUI mode.
 
 Even though a simplified UART model is used, it takes 20 cycles to send 1 byte (2 cycles per bit, including start and stop bits). The test transfers 101376 bytes (352×288 pixels), which equates to 101376×20 = 2.03e6 cycles. With each cycle taking 10 ns (100 MHz), the test covers 20.3 ms of simulation time.
 On an Ubuntu laptop using the Questa Starter Edition, this took approximately 18 minutes in batch mode.
+
+Use the below target for removing build files
+```bash
+make clean_build
+```
+
+
 
 ### 3.  FPGA Implementation
 
@@ -246,13 +253,13 @@ To test the system you will send an image from your computer to the Didactic-SoC
 
 Compile the code for FPGA with the following make target from `fpga/`
 
-```
+```bash
 make build_test TEST=pixel_inversion
 ```
 Note: There are two CPU programs - one in `sw/` for simulation and another in `fpga/sw/` for the FPGA implementation, which is intended to work with the Python GUI on the PC side.
 
 Synthesize and implement the design using **Vivado**. This can be done by running
-```
+```bash
 make fpga
 ```
 If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
@@ -266,7 +273,7 @@ You may use the `Hardware Manager` in Vivado GUI for uploading the bitstream. Th
 Requires Python 3.12 (newer versions may not be compatible). From `fpga/serial_interface/`:
 
 **Windows (PowerShell):**
-```
+```bash
 py -3.12 --version
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -290,16 +297,19 @@ If you don't have Python 3.12, install it with your package manager.
 
 ### 5. Program and debug over JTAG (Optional)
 
+The main advantage of using JTAG is being able to reprogram the CPU in the Didactic-SoC without having to rebuild the FPGA bitstream.
+
 To upload code to the CPU in the Didactic-SoC, first start an OpenOCD server. OpenOCD acts as a bridge between the GNU Debugger (GDB) and the physical JTAG interface.
 
 #### Linux
 
-```
+```bash
 openocd -f fpga/utils/openocd-didactic-nexys.cfg
 ```
 
 Then from `fpga/`, upload the program with
-```
+
+```bash
 make load_elf TEST=pixel_inversion
 ```
 
@@ -342,11 +352,11 @@ continue
 ```
 
 To create a breakpoint in gdb:
-```
+```bash
 break *0x1000474
 ```
 When hit the target halts. **Important: Delete breakpoints before continuing**. 
-```
+```bash
 delete breakpoints
 continue
 ```

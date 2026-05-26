@@ -258,3 +258,7 @@ ABANDONED IDEA OF DEBUGGING THROUGH WSL usbipd seems to be too slow.
 
 ### Next
 - Add DMEM initialization in tb and also in FPGA with bitstream (in case students use initialized variables)
+
+## 2026-05-26
+### Did
+- Added DMEM initialization in hex file. Used linker's AT> directive to place .data load address (LMA) in IMEM, then crt0 copies .data bytes from IMEM to their correct DMEM addresses. At boot, crt0 runs the copy loop - reads the .data bytes out of IMEM (from _sidata) and writes them to their correct DMEM addresses (_sdata to _esdata).
