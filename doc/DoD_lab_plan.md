@@ -1,9 +1,7 @@
 
 # Image processing accelerator with CPU data transport
 
-This laboratory exercise extends the existing image processing accelerator lab by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheral.
-
-The goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware–software co-design.
+This laboratory exercise extends the existing image processing accelerator lab by integrating it into the Didactic-SoC and introducing data transport between the CPU, accelerator, and UART peripheralThe goal is to expose students to memory-mapped hardware modules, a simple SoC architecture, and hardware-software co-design.
 
 This lab supports Linux and Windows operating systems. For Linux the commands are given and were tested on a Ubuntu 24.04 LTS system.
 
@@ -264,25 +262,30 @@ To open the Vivado project with the GUI - launch Vivado then choose "Open Projec
 You may use the `Hardware Manager` in Vivado GUI for uploading the bitstream. The bitstream also contains memory initialization commands so after bitstream flashing the CPU program will start executing instantly.
 
 ### 4. Test with Python GUI
-Check if you have Python 3.12 on your system.
+
+Requires Python 3.12 (newer versions may not be compatible). From `fpga/serial_interface/`:
+
+**Windows (PowerShell):**
 ```
 py -3.12 --version
-```
-If you don't have Python you can use the command below to install it or you can also get it from https://www.python.org/
-```
-winget install Python.Python.3.12
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python serial_interface.py
 ```
 
-Create a virtual environment and install the required dependencies. For PowerShell, from `/fpga/serial_interface/` use:
-```
-py -3.12 -m venv .venv
-py -3.12 -m venv .venv
+If you don't have Python 3.12, install it with `winget install Python.Python.3.12` or from https://www.python.org/
+
+**Linux:**
+```bash
+python3.12 --version
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+python serial_interface.py
 ```
-then simply run the GUI:
-```
-python .\serial_interface.py
-```
+
+If you don't have Python 3.12, install it with your package manager.
 
 
 ### 5. Program and debug over JTAG (Optional)
@@ -301,8 +304,6 @@ make load_elf TEST=pixel_inversion
 ```
 
 This will start GDB. 
-🔴 TODO: Copy-paste the useful commands from vjtag_doc.md
-...
 
 #### Windows
 
@@ -331,6 +332,8 @@ Wait for `Ready for Remote Connections`.
 gdb-multiarch ../build/fpga/sw/<test>.elf -x utils/connect-and-load.gdb
 ```
 
+
+🔴 TODO: Copy-paste the useful commands from vjtag_doc.md
 
 
 # Draft space (old stuff)
