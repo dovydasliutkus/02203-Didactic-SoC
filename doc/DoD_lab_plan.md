@@ -333,7 +333,39 @@ gdb-multiarch ../build/fpga/sw/<test>.elf -x utils/connect-and-load.gdb
 ```
 
 
-🔴 TODO: Copy-paste the useful commands from vjtag_doc.md
+### Useful commands for gdb
+
+To run a program from gdb:
+```bash
+continue
+# Use Ctrl+C to halt target
+```
+
+To create a breakpoint in gdb:
+```
+break *0x1000474
+```
+When hit the target halts. **Important: Delete breakpoints before continuing**. 
+```
+delete breakpoints
+continue
+```
+If breakpoints remain, the core becomes unresponsive. So breakpoint flow: <br>
+break |adr| -> continue -> * CPU breaks* -> delete breakpoints -> continue
+
+### Stepping
+Single-step (`step`, `next`) causes the core to hang.
+
+### Reset
+The core can be reset from `gdb` using:
+```bash
+monitor reset
+monitor halt
+set $pc=0x01000080
+```
+
+Then `monitor reset` works without setting pc (hence also no need to halt). This also allows the CPU to start executing an application after hard reset (through physical switch) if the application was uploaded in the same power cycle.
+
 
 
 # Draft space (old stuff)
