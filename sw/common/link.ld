@@ -38,18 +38,25 @@ SECTIONS
 
   .data : ALIGN(4)
   {
+    _sdata = .;
     *(.data*);
-  } > DMEM
+    _edata = .;
+  } > DMEM AT> IMEM
 
   .sdata : ALIGN(4)
   {
     *(.sdata*);
-  } > DMEM
+    _esdata = .;
+  } > DMEM AT> IMEM
+
+  _sidata = LOADADDR(.data);
 
   .bss (NOLOAD) :
   {
+    _sbss = .;
     *(.bss*)
     *(COMMON)
+    _ebss = .;
   } > DMEM
  
   .stack (NOLOAD) : 
