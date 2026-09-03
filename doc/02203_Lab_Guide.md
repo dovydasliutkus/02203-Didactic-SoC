@@ -32,10 +32,10 @@ The SoC receives an image over UART, a RISC-V CPU feeds this image into your acc
 
 The Didactic-SoC is a small RISC-V system-on-chip, it has two parts:
 
-- a fixed **staff (management) section** — a RISC-V **Ibex** core (RV32IMC),
+- a fixed **staff (management) section** - a RISC-V **Ibex** core (RV32IMC),
   16 KiB instruction memory (IMEM) and 16 KiB data memory (DMEM),
   **UART / SPI / GPIO** peripherals, a JTAG debug module and a controller (control register bank).
-- five **student subsystem slots (SS0–SS4)** — customisable modules attached to the CPU over an **APB** bus. Your accelerator goes in **SS0**.
+- five **student subsystem slots (SS0-SS4)** - customisable modules attached to the CPU over an **APB** bus. Your accelerator goes in **SS0**.
 
 Everything is **memory-mapped** into one 32-bit address space, so from C the CPU
 reaches memory, peripherals and your accelerator the same way: by reading and
@@ -91,7 +91,7 @@ You do not need the FPGA to develop, though. The lab builds up to that round tri
 |-------|-----------|-------------------|---------------------|
 | Task 0-1 | `src/tb/tb_student_ss.sv` | Your accelerator alone | The testbench drives the CSR and buffers directly over **APB** and reads/writes `.pgm` files - no CPU, no UART |
 | Task 2 | `src/tb/tb_didactic_V1.sv` | The whole SoC running the real CPU firmware | The testbench emulates the PC: it bit-bangs the image in over **UART**, the CPU and your accelerator do the rest |
-| Task 3-4 | — (real FPGA) | The taped-out flow on a Nexys A7 | An actual PC running the Python serial GUI |
+| Task 3-4 | - (real FPGA) | The taped-out flow on a Nexys A7 | An actual PC running the Python serial GUI |
 
 Both testbenches write the processed image to a `.pgm` in `src/tb/out_images/` for visual inspection. View it with **IrfanView** or any viewer that supports the PGM format.
 
@@ -102,13 +102,22 @@ To keep the system simulation fast, `tb_didactic_V1.sv` takes two shortcuts: it 
 ## Tasks
 ### 0.  Test the Didactic-SoC with a Working Example
 
-This task checks that your toolchain is complete and introduces the `make` flow. The two commands below exercise the two independent toolchains you installed: the RISC-V cross-compiler (software) and Questa (simulation). They do **not** depend on each other - `tb_student_ss` drives the accelerator directly and never runs the CPU firmware.
+This task checks that your toolchain is complete and introduces the `make` flow. The steps below exercise the tools you installed: Bender (fetches the hardware dependencies), the RISC-V cross-compiler (builds the firmware), and Questa (runs the simulation). Steps 2 and 3 are independent - `tb_student_ss` drives the accelerator directly and never runs the CPU firmware.
 
 Run all commands from the project root, `02203-Didactic-SoC/`.
 
 > **Windows:** replace `make` with `make -f Makefile.win` for every command in this guide.
 
-#### Step 1 - Build the CPU firmware
+#### Step 1 - Fetch the hardware dependencies
+
+Run once, after cloning the repository:
+```bash
+make repository_init
+```
+
+This uses Bender to download the open-source IP the SoC is built from (CPU core, bus, peripherals) into `.bender/` and `vendor_ips/`.
+
+#### Step 2 - Build the CPU firmware
 
 ```bash
 make build_test TEST=pixel_inversion
@@ -118,7 +127,7 @@ This cross-compiles [sw/pixel_inversion/pixel_inversion.c](../sw/pixel_inversion
 
 > **Note**: If this step fails, your RISC-V toolchain might not be on `PATH`.
 
-#### Step 2 - Simulate the standalone accelerator
+#### Step 3 - Simulate the standalone accelerator
 
 ```bash
 make test_ss
@@ -135,7 +144,7 @@ The default accelerator inverts pixels, so `pattern_result.pgm` should look like
 
 **Success criteria:** the simulation runs to `$finish` with no errors, and the result PGM appears in `src/tb/out_images/` and opens in an image viewer.
 
-#### Step 3 - Simulate with the Questa GUI
+#### Step 4 - Simulate with the Questa GUI
 
 ```bash
 make test_ss_gui
@@ -218,138 +227,129 @@ Remove build files with:
 make clean_build
 ```
 
-
-
 ### 3.  FPGA Implementation
 
-To test the system you will send an image from your computer to the Didactic-SoC and receive the processed image back. The steps are:
+Now run the design on real hardware: a **Digilent Nexys A7** board driven from a PC over UART. End to end: the PC sends a 352x288 image to the FPGA over UART, the CPU writes the pixels into the accelerator input buffer, the accelerator processes the frame, and the CPU sends the result back over UART to the PC.
 
-1. A computer sends an image to the FPGA via UART.
-2. The CPU forwards the pixel data to the accelerator IBUF.
-3. The accelerator processes the image.
-4. The CPU sends the processed image back to the PC through UART.
+> **Important**. Unlike the earlier tasks, all commands in this section run from the **`fpga/`** directory, not the project root.
 
-Compile the code for FPGA with the following make target from `fpga/`
+#### Build the FPGA firmware
 
 ```bash
+cd fpga
 make build_test TEST=pixel_inversion
 ```
-Note: There are two CPU programs - one in `sw/` for simulation and another in `fpga/sw/` for the FPGA implementation, which is intended to work with the Python GUI on the PC side.
 
-Synthesize and implement the design using **Vivado**. This can be done by running
+This compiles `fpga/sw/pixel_inversion/pixel_inversion.c` into `build/fpga/sw/`. There are two separate CPU programs: `sw/` is the simulation firmware from Tasks 0-2, and `fpga/sw/` is the FPGA firmware that talks to the PC GUI. On Windows this step is delegated to WSL.
+
+#### Synthesize, implement, and generate the bitstream
+
 ```bash
-make fpga
-```
-If synthesis errors occur, check your RTL code for **unsynthesizable constructs**.
-
-To open the Vivado project with the GUI - launch Vivado then choose "Open Project" and select `build/fpga/nexys_a7/didactic-nexys_a7.xpr` file.
-
-You may use the `Hardware Manager` in Vivado GUI for uploading the bitstream. The bitstream also contains memory initialization commands so after bitstream flashing the CPU program will start executing instantly.
-
-### 4. Test with Python GUI
-
-Requires Python 3.12 (newer versions may not be compatible). From `fpga/serial_interface/`:
-
-**Windows (PowerShell):**
-```bash
-py -3.12 --version
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python serial_interface.py
+make all_xilinx        # batch
+make all_xilinx_gui    # same flow with the Vivado GUI open
 ```
 
-If you don't have Python 3.12, install it with `winget install Python.Python.3.12` or from https://www.python.org/
+**Order matters:** the firmware is baked into the bitstream as instruction-memory initialisation data, so ensure it was built successfully before running this. Any later change to `fpga/sw/` or to your RTL means re-running `all_xilinx` - or use JTAG (Task 5) to reload just the firmware without re-synthesising.
 
-**Linux:**
+If synthesis fails, check your RTL for **unsynthesizable constructs**: `initial` blocks that assign values, `#` delays, `$display` / `$finish`, multiply-driven signals, non-constant loop bounds.
+
+#### Program the board
+
+Connect the Nexys A7 by USB and power it on. In Vivado GUI open **Hardware Manager -> Open Target -> Auto Connect -> Program Device**, and select the generated bitstream in `build/fpga/nexys_a7/didactic-nexys_a7.runs/impl_1/` (`*.bit`). To browse the project itself, open Vivado and choose *Open Project* -> `build/fpga/nexys_a7/didactic-nexys_a7.xpr`.
+
+The bitstream carries the instruction-memory contents, so the CPU program starts running the moment programming finishes - there is no separate load step.
+
+### 4. Test with the serial interface GUI
+
+The GUI in `fpga/serial_interface/` sends a PGM to the board and reads the processed image back. It accepts **P2-type PGM images that are exactly 352x288 pixels**.
+
+**Windows:** run the bundled executable `fpga/serial_interface/Serial interface.exe` - no Python needed.
+
+**Linux:** run the Python script. It depends on `appJar`, which is sensitive to the Python version; this was set up against **Python 3.12**.
+
 ```bash
-python3.12 --version
+cd fpga/serial_interface
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python serial_interface.py
 ```
 
-If you don't have Python 3.12, install it with your package manager.
+On Linux also install Tk, which pip cannot provide: `sudo apt install python3-tk` (or `python3.12-tk`).
+
+**Using the GUI** (full help in `fpga/serial_interface/HELP.txt`):
+
+1. **Setup:** select your board's serial port from the drop-down (*Refresh list* to rescan), set the baud rate to **38400** (this matches the FPGA firmware's `uart_init(..., 38400)`), then press *Test port*.
+2. **Download:** *Open...* a 352x288 P2 PGM, then *Download image* to send it to the board.
+3. **Upload:** *Upload image* to read the processed frame back, *Show image* to preview, *Save...* to write it to a `.pgm`.
+
+Compare the uploaded image against the input to confirm your accelerator ran on hardware.
 
 
 ### 5. Program and debug over JTAG (Optional)
 
-The main advantage of using JTAG is being able to reprogram the CPU in the Didactic-SoC without having to rebuild the FPGA bitstream.
+JTAG lets you reload firmware and step through code on the running SoC without rebuilding the bitstream. OpenOCD bridges GDB and the board's JTAG; GDB then talks to the CPU's debug module.
 
-To upload code to the CPU in the Didactic-SoC, first start an OpenOCD server. OpenOCD acts as a bridge between the GNU Debugger (GDB) and the physical JTAG interface.
+**Prerequisites:** OpenOCD and gdb-multiarch installed (setup guide section 7), the bitstream already flashed (Task 3 - the debug module only exists once the FPGA is configured), and the FPGA firmware built (`make build_test` in `fpga/`). All commands below run from `fpga/`.
 
 #### Linux
 
+Start the server (leave it running; it needs USB access):
 ```bash
-openocd -f fpga/utils/openocd-didactic-nexys.cfg
+openocd -f utils/openocd-didactic-nexys.cfg
 ```
 
-Then from `fpga/`, upload the program with
-
+In a second terminal, load the firmware and attach GDB:
 ```bash
 make load_elf TEST=pixel_inversion
 ```
 
-This will start GDB. 
-
 #### Windows
 
-All commands below run inside the **MSYS2 MINGW64** terminal.
+All commands run in the **MSYS2 MINGW64** terminal (see setup guide section 7 for installing `openocd` / `gdb-multiarch`).
 
-**1. Switch the FTDI driver**
+1. **Switch the FTDI driver with Zadig** (after flashing the bitstream): *Options -> List All Devices*, select **Digilent USB Device (Interface 0)**, set driver to **WinUSB**, *Install Driver*.
+2. **Start OpenOCD** (leave this terminal open):
+   ```bash
+   openocd -f utils/openocd-didactic-nexys.cfg
+   ```
+   Wait for `Ready for Remote Connections`.
+3. **Load the firmware and attach GDB** (second MSYS2 terminal):
+   ```bash
+   gdb-multiarch ../build/fpga/sw/pixel_inversion.elf -x utils/connect-and-load.gdb
+   ```
 
-Open Zadig after flashing the bitstream onto the FPGA:
-1. Options -> List All Devices
-2. Select **Digilent USB Device (Interface 0)**
-3. Set driver to **WinUSB** -> Install Driver
+> **Restoring Vivado's programmer:** Device Manager -> Universal Serial Bus devices -> right-click **Digilent USB Device** -> *Uninstall device*, then unplug and replug the board. Windows reinstalls the default `FTDIBUS` driver.
 
-> **Restoring Vivado's programmer:** Open Device Manager -> Universal Serial Bus devices -> right-click **Digilent USB Device** -> Uninstall device. Unplug and replug the board — Windows will reinstall the default `FTDIBUS` driver automatically.
+#### Running the firmware from GDB
 
-**2. Start OpenOCD** (leave this terminal open)
+`connect-and-load.gdb` only connects and writes IMEM - it does not start execution. At the `(gdb)` prompt:
 
-From the `fpga/` directory:
-```bash
-openocd -f utils/openocd-didactic-nexys.cfg
-```
-Wait for `Ready for Remote Connections`.
-
-**3. Flash the ELF** (second MSYS2 terminal)
-
-```bash
-gdb-multiarch ../build/fpga/sw/<test>.elf -x utils/connect-and-load.gdb
-```
-
-
-### Useful commands for gdb
-
-To run a program from gdb:
-```bash
-continue
-# Use Ctrl+C to halt target
-```
-
-To create a breakpoint in gdb:
-```bash
-break *0x1000474
-```
-When hit the target halts. **Important: Delete breakpoints before continuing**. 
-```bash
-delete breakpoints
-continue
-```
-If breakpoints remain, the core becomes unresponsive. So breakpoint flow: <br>
-break |adr| -> continue -> * CPU breaks* -> delete breakpoints -> continue
-
-### Stepping
-Single-step (`step`, `next`) causes the core to hang.
-
-### Reset
-The core can be reset from `gdb` using:
 ```bash
 monitor reset
 monitor halt
 set $pc=0x01000080
+continue
+# Use Ctrl+C to halt target
 ```
 
-Then `monitor reset` works without setting pc (hence also no need to halt). This also allows the CPU to start executing an application after hard reset (through physical switch) if the application was uploaded in the same power cycle.
+`0x01000080` is the firmware entry point (IMEM base `0x01000000` + `crt0` offset.
+
+> A hard reset with the board's physical button also starts the newly uploaded firmware, as long as it was loaded in the same power cycle. This can be more reliable than reset through JTAG
+
+#### GDB reference
+
+**Breakpoints.** `step` and `next` hang the core - use breakpoints instead:
+
+```bash
+break main        # or: break *0x01000474
+continue          # runs until the breakpoint; core halts
+delete breakpoints
+continue
+```
+
+> **Warning:** always `delete breakpoints` before `continue`. If any breakpoint remains set when you resume, the core becomes unresponsive.
+
+**Other useful commands:** `Ctrl+C` halts a running target; `monitor halt` / `monitor resume` control it via OpenOCD; `info registers` dumps the register file.
+
+

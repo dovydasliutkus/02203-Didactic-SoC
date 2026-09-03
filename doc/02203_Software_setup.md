@@ -6,9 +6,10 @@
 | 2 | Questa Starter Edition | Simulation |
 | 3 | WSL2 | Windows only |
 | 4 | `riscv64-unknown-elf` toolchain | Cross-compiler |
-| 5 | Vivado | FPGA synthesis and implementation |
-| 6 | Python 3 | For the PC side of the FPGA test. Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
-| 7 | OpenOCD (Optional) | JTAG debugging |
+| 5 | Bender | Hardware dependency manager (fetches the open-source IP) |
+| 6 | Vivado | FPGA synthesis and implementation |
+| 7 | Python 3 | For the PC side of the FPGA test. Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
+| 8 | OpenOCD (Optional) | JTAG debugging |
 
 ## Software setup guide
 
@@ -165,7 +166,30 @@ Verify (inside WSL / Linux):
 riscv64-unknown-elf-gcc --version
 ```
 
-### 5. Vivado
+### 5. Bender
+
+Bender is the dependency manager for the SoC's hardware IP - it fetches the open-source modules (CPU core, bus, peripherals) that the RTL build needs.
+
+Install it **inside WSL** (or natively on Linux). On Windows the build invokes Bender through WSL, so it must be installed there, not in native Windows.
+
+Use the official installer (downloads a prebuilt binary):
+```bash
+sudo apt install curl        # if curl is missing
+curl --proto '=https' --tlsv1.2 https://pulp-platform.github.io/bender/init -sSf | sh
+```
+The installer writes the binary to `./bin/bender` in the current directory. Move it onto your `PATH`:
+```bash
+sudo mv bin/bender /usr/local/bin/
+```
+
+Verify:
+```bash
+bender --version
+```
+
+Project home: <https://github.com/pulp-platform/bender>.
+
+### 6. Vivado
 
 See installation guide on DTU Learn.
 
@@ -189,7 +213,7 @@ See installation guide on DTU Learn.
 
 > **Note:** The installer requires ~60 GB of disk space for a full install. A 7 Series-only install is roughly 20 GB. -->
 
-### 6. On-hardware debugging OpenOCD and gdb-multiarch (Optional)
+### 7. On-hardware debugging OpenOCD and gdb-multiarch (Optional)
 
 OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA board. Since the bitstream already initialises instruction memory, OpenOCD is not needed for basic testing - it becomes useful if you want to step through code, inspect registers, or reload software without re-programming the FPGA.
  `gdb-multiarch` is the multi-architecture gdb version that supports RISC-V debugging.
