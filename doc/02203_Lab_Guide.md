@@ -17,225 +17,203 @@ This lab supports Linux and Windows operating systems. For Linux the commands ar
 | 6 | Python 3 | For the PC side of the FPGA test. Packages: `pyserial`, `Pillow`, `appJar`, `python3-tk` |
 | 7 | OpenOCD (Optional) | JTAG debugging |
 
-## Software setup guide
+Refer to [02203_Software_setup](02203_Software_setup.md) for setting up the required tools.
 
-### 1. Make
+## Project overview
 
-**Linux:** Make is typically pre-installed.
+### What you will build
 
-**Windows:** Install via [Chocolatey](https://chocolatey.org/install) package manager, then run:
-```bash
-choco install make
-```
+You will implement an **edge detection accelerator** in RTL and run it as a
+hardware module inside the **Didactic-SoC**. 
 
-Verify with `make --version`.
+The SoC receives an image over UART, a RISC-V CPU feeds this image into your accelerator, waits for it to finish processing, and streams the result back out over UART. The edge detection algorithm is described in the pdf, this guide is about its integration in the SoC.
 
-### 2. Questa Starter Edition
+### The Didactic-SoC in one minute
 
-Download from the [Altera download center](https://www.altera.com/downloads/simulation-tools/questa-fpgas-standard-edition-software-version-25-1) (available for both Linux and Windows).
+The Didactic-SoC is a small RISC-V system-on-chip, it has two parts:
 
-To get a free license:
-1. Go to the [Self Service Licensing Center](https://www.altera.com/SSLC) and create an account.
-2. Choose **Sign up for Evaluation or No-Cost Licenses** and select **Questa FPGA Starter Edition**.
-3. Set License Type to **FIXED** and enter your NIC ID (MAC address) as the Primary Computer ID.
-4. You will receive an email with a `.dat` license file.
-5. Set the environment variable `SALT_LICENSE_FILE` to point to that file.
+- a fixed **staff (management) section** — a RISC-V **Ibex** core (RV32IMC),
+  16 KiB instruction memory (IMEM) and 16 KiB data memory (DMEM),
+  **UART / SPI / GPIO** peripherals, a JTAG debug module and a controller (control register bank).
+- five **student subsystem slots (SS0–SS4)** — customisable modules attached to the CPU over an **APB** bus. Your accelerator goes in **SS0**.
 
-First time using Questa? Glance over the guide: [Questa Quick-Start Guide](https://www.intel.com/programmable/technical-pdfs/703090.pdf)
+Everything is **memory-mapped** into one 32-bit address space, so from C the CPU
+reaches memory, peripherals and your accelerator the same way: by reading and
+writing `volatile` pointers. The blocks you need:
 
-### 3. WSL2 (Windows only)
+| Block | Base address |
+|-------|--------------|
+| Data memory (DMEM) | `0x01010000` |
+| UART peripheral | `0x01030100` |
+| Controller block | `0x01040000` |
+| Student subsystem 0 (your accelerator) | `0x01050000` |
 
-Follow the [official WSL installation guide](https://documentation.ubuntu.com/wsl/stable/#1-overview).
+The provided C headers already define these. A full memory map and register
+listing is in [the-didactic-soc-platform.md](the-didactic-soc-platform.md).
 
-### 4. RISC-V toolchain
+![Didactic-SoC architecture](figures/didactic_architecture.drawio.svg)
 
-Inside WSL (or on Linux):
-```bash
-sudo apt install gcc-riscv64-unknown-elf
-```
+Two things about this SoC differ from a typical microcontroller:
 
-### 5. Vivado
+- **There is no bootloader.** Instruction memory is preloaded before the core
+  runs - by the testbench in simulation, and by the bitstream (or over JTAG) on the FPGA. Your compiled C lands in IMEM with no boot code in front of it.
+- **Subsystems start gated off.** Before SS0 responds on the bus, the CPU must
+  enable its clock and release it - and the interconnect - from reset through
+  the controller block at `0x01040000`. The example firmware handles this with a
+  single call to `ss_init(0)` (see
+  [pixel_inversion.c:56](../sw/pixel_inversion/pixel_inversion.c#L56)).
 
-See installation guide on DTU Learn.
+### The accelerator subsystem
 
-<!-- 1. Download the **Vivado ML Edition** installer (Linux `.bin`) from the [AMD downloads page](https://www.xilinx.com/support/download.html). Select the latest 2024.x release and choose *AMD Unified Installer for FPGAs & Adaptive SoCs*.
+SS0 is provided in [Student_area_0.sv](../src/rtl/Student_area_0.sv) as a working example that performs **pixel inversion**. It contains an **input buffer** and **output buffer** (BRAM), a **control/status register (CSR)**, and the APB bus handling. The pixel processing FSM is split into a submodule, [pixel_acc.sv](../src/rtl/pixel_acc.sv) - that is the part you replace with your edge detector (by default does pixel inversion).
 
-2. Make the installer executable and run it:
-   ```
-   chmod +x FPGAs_AdaptiveSoCs_Unified_<version>_Lin64.bin
-   sudo ./FPGAs_AdaptiveSoCs_Unified_<version>_Lin64.bin
-   ```
-
-3. In the installer GUI, select **Vivado** (not Vitis), then **Vivado ML Standard** (free edition). When choosing devices, selecting only *7 Series* is sufficient for this lab and keeps the download size manageable.
-
-4. After installation, add Vivado to your PATH by sourcing its settings script. Add the following line to your `~/.bashrc`:
-   ```
-   source /tools/Xilinx/Vivado/<version>/settings64.sh
-   ```
-   Then reload: `source ~/.bashrc`
-
-5. Verify with `vivado -version`.
-
-> **Note:** The installer requires ~60 GB of disk space for a full install. A 7 Series-only install is roughly 20 GB. -->
-
-### 6. On-hardware debugging OpenOCD and gdb-multiarch (Optional)
-
-OpenOCD bridges GNU Debugger (GDB) and the physical JTAG interface on the FPGA board. Since the bitstream already initialises instruction memory, OpenOCD is not needed for basic testing - it becomes useful if you want to step through code, inspect registers, or reload software without re-programming the FPGA.
- `gdb-multiarch` is the multi-architecture gdb version that supports RISC-V debugging.
-
-**Linux (Ubuntu):**
-
-```bash
-sudo apt install gdb-multiarch
-sudo apt install openocd
-```
-
-Verify with `gdb-multiarch --version` and `openocd --version`.
-
-**Windows:** 
-
-#### Step 1 - Install MSYS2
-
-Download and run the installer from [msys2.org](https://www.msys2.org). Use the **MINGW64** environment for all commands below.
-
-#### Step 2 - Install OpenOCD and GDB (inside MSYS2 MINGW64)
-
-```bash
-pacman -S mingw-w64-x86_64-openocd mingw-w64-x86_64-riscv64-unknown-elf-gdb
-```
-
-#### Step 3 - Zadig for switching out the FTDI driver
-
-Install [Zadig](https://zadig.akeo.ie). 
-
-
-
-## Overview
-
-<!-- Include parts of "Course-material-Didactic" below for system description-->
-The Didactic SoC architecture has two distinct functional sections: the management
-section, also called the staff section, and the student sections in which student subsystems are integrated.
-These sections are highlighted in the Figure below. 
-
-![Didactic-SoC architecture](figures/architecture.png)
-
-You may find a detailed description of the Didactic-SoC platform in `doc/the-didactic-soc-platform.md`.
-
-The Student Sub-System in `src/rtl/Student_area_0.sv` contains a simple pixel inversion accelerator. 
-
-The accelerator consists of input and output buffers (implemented as BRAM), a control/status register (CSR), APB bus handling, and a processing FSM that performs pixel inversion.
+**Read the header comment in both .sv files**: they document the CSR
+bit layout and the buffer access protocol.
 
 ![Student SS with pixel inversion accelerator](figures/student_ss_bd.drawio.svg)
 
-The CPU controls the accelerator and performs the following steps:
+The CPU drives the accelerator through the CSR at the SS0 base address:
 
-1. Receive image data via **UART** and copy it to the accelerator **input buffer**.
+1. Receive image data over **UART** and copy it into the accelerator
+   **input buffer**.
 2. Set the **DATA_READY** bit in the CSR to start processing.
 3. Poll the **DONE** bit in the CSR.
-4. When processing is complete (**DONE = 1**), send the processed image back via **UART**.
+4. When **DONE = 1**, read the **output buffer** and send the processed image
+   back over **UART**.
 
-In the real-world test on an FPGA, the image will be sent from a PC over UART, processed by the SoC, and returned to the PC. The testbench mirrors this flow: it acts as the PC, sending the image over UART and receiving the result, which it then saves as a `.pgm` file for visual inspection.
+### Testing
 
-The generated `.pgm` file can be viewed using software such as **IrfanView** or any image viewer that supports the PGM format.
+The **end goal** is a full round trip: a PC sends an image to the Didactic-SoC over UART, the CPU runs it through your accelerator, and the SoC sends the processed image back over UART to the PC, where you view it. On real hardware (Task 3-4) this is done with the board plugged into a USB port and a Python GUI on the PC driving the serial link.
 
+You do not need the FPGA to develop, though. The lab builds up to that round trip in three stages, each with its own simulation:
+
+| Stage | Testbench | What it exercises | What plays the PC |
+|-------|-----------|-------------------|---------------------|
+| Task 0-1 | `src/tb/tb_student_ss.sv` | Your accelerator alone | The testbench drives the CSR and buffers directly over **APB** and reads/writes `.pgm` files - no CPU, no UART |
+| Task 2 | `src/tb/tb_didactic_V1.sv` | The whole SoC running the real CPU firmware | The testbench emulates the PC: it bit-bangs the image in over **UART**, the CPU and your accelerator do the rest |
+| Task 3-4 | — (real FPGA) | The taped-out flow on a Nexys A7 | An actual PC running the Python serial GUI |
+
+Both testbenches write the processed image to a `.pgm` in `src/tb/out_images/` for visual inspection. View it with **IrfanView** or any viewer that supports the PGM format.
+
+To keep the system simulation fast, `tb_didactic_V1.sv` takes two shortcuts: it uses a simplified UART model (20 cycles per byte instead of a real baud divider), and it reads the result straight from the accelerator output buffer instead of waiting for the CPU to stream every byte back over UART. The FPGA test does the real thing end to end.
+
+---
 
 ## Tasks
 ### 0.  Test the Didactic-SoC with a Working Example
 
-This task is meant for testing if you have correctly installed the required software and also to familiarize yourself with the SoC and the make automation that is used in the project. 
+This task checks that your toolchain is complete and introduces the `make` flow. The two commands below exercise the two independent toolchains you installed: the RISC-V cross-compiler (software) and Questa (simulation). They do **not** depend on each other - `tb_student_ss` drives the accelerator directly and never runs the CPU firmware.
 
-Firstly, compile C code by running the following make command from project root directory `02203-Didactic-SoC/`
+Run all commands from the project root, `02203-Didactic-SoC/`.
+
+> **Windows:** replace `make` with `make -f Makefile.win` for every command in this guide.
+
+#### Step 1 - Build the CPU firmware
 
 ```bash
 make build_test TEST=pixel_inversion
 ```
-> **Windows:** replace `make` with `make -f Makefile.win` for all commands below.
 
-Try to run a testbench in batch mode with
+This cross-compiles [sw/pixel_inversion/pixel_inversion.c](../sw/pixel_inversion/pixel_inversion.c) and links it into `build/sw/pixel_inversion.elf`, then produces a `.hex` image used to preload instruction memory. A disassembly is left in `build/sw/pixel_inversion.asm` if you want to inspect it. 
+
+> **Note**: If this step fails, your RISC-V toolchain might not be on `PATH`.
+
+#### Step 2 - Simulate the standalone accelerator
 
 ```bash
 make test_ss
 ```
 
-This will run `src/tb/tb_student_ss.sv` testbench that simulates the standalone `Student_area_0` module. 
+This runs the `src/tb/tb_student_ss.sv` testbench against the standalone `Student_area_0` module in batch mode. The testbench:
 
-The testbench reads an input PGM (set by the `src_image` parameter), drives the accelerator via an [APB](https://developer.arm.com/documentation/ihi0024/latest/) interface, and writes the processed result to a new PGM which can be found in `src/tb/out_images/`.
+1. reads an input image from `src/tb/src_images/` (default `pattern.pgm`, 352x288, 8-bit grayscale),
+2. writes the pixels into the accelerator input buffer over [APB](https://developer.arm.com/documentation/ihi0024/latest/),
+3. starts the accelerator and waits for `DONE`,
+4. reads the output buffer back and writes `src/tb/out_images/pattern_result.pgm`.
 
-You can also run the testbench with GUI, which will be useful when debugging your design
+The default accelerator inverts pixels, so `pattern_result.pgm` should look like a photographic negative of the input. To try another image, edit the `src_image` parameter at the top of `src/tb/tb_student_ss.sv` (e.g. `"kaleidoscope.pgm"`).
+
+**Success criteria:** the simulation runs to `$finish` with no errors, and the result PGM appears in `src/tb/out_images/` and opens in an image viewer.
+
+#### Step 3 - Simulate with the Questa GUI
+
 ```bash
 make test_ss_gui
 ```
+
+Same run, but Questa opens with a preconfigured waveform (`wave_ss.do`). Use this when debugging your own RTL in Task 1. Run `make clean_build` at any time to wipe `build/` and `src/tb/out_images/` and start fresh.
+
+> **Keeping the GUI open:** the testbench ends with `$finish`, which makes Questa pop up *"Are you sure you want to finish?"* - choose **No** to keep the window and waveforms up for inspection. If you iterate a lot in GUI, replace `$finish` with `$stop` at the end of `src/tb/tb_student_ss.sv`: the popup no longer appears in GUI mode, but in batch mode (`make test_ss`) the simulation then halts instead of exiting, so you have to quit Questa manually.
+
+> **Persisting your waveform:** signals you drag into the Wave window are lost on the next `make test_ss_gui` unless you save them. Add the signals you want (right-click -> *Add Wave*), arrange them, then **File -> Save Format...** and overwrite `sim/wave_ss.do`. The GUI run executes `do wave_ss.do` on startup, so your layout comes back on every rerun.
 
 ---
 
 ### 1.  Develop the Edge Detection Accelerator
 
 #### Architecture consideration
-Before writing any RTL code, you need a design. You need
-to understand the problem and consider possible implementations.
 
-...
+Before writing any RTL. You need to understand the problem and consider possible implementations. You need to think about how much data your HW accelerator will buffer internally, how pixels are accessed from the memory, and how many times the same pixel is read from memory during the processing of an image frame. In this process, you may also try to estimate bounds on the time it takes to process an image. A lower bound can be established by calculating the time it takes your design to read from and write to the memory. You may be able to think of other bounds and estimates that characterize your design. To keep the size of the design manageable, you may ignore the boundary conditions and simply produce an image that is smaller than the original (missing the left and right columns of pixels and the upper and lower rows of pixels).
 
-Draw a block diagram showing the datapath you have designed and develop an ASMD chart specification of your design.
+Draw a block diagram showing the datapath you have designed and develop an ASMD-chart specification of your design.
 
 #### RTL design
 
-Using your ASMD chart and block diagram, implement the edge detection accelerator in RTL. Write your code in `src/rtl/Student_area_0.sv`, replacing the pixel inversion logic from Task 0.
+Implement your accelerator in [pixel_acc.sv](../src/rtl/pixel_acc.sv) - this is the FSM submodule that currently does pixel inversion. Its interface is a `start` pulse, a 1-cycle-latency read port into the input buffer (`ibuf_rd_en` / `ibuf_rd_addr` -> `ibuf_rd_data`), a write port into the output buffer (`obuf_wr_en` / `obuf_wr_addr` / `obuf_wr_data`), and a `finish` pulse you assert once the last output word is written. Each 32-bit word packs 4 pixels little-endian. Read the header comments in `pixel_acc.sv` and [Student_area_0.sv](../src/rtl/Student_area_0.sv) for the exact timing and buffer layout or run Questa in GUI mode and analyse the waveforms. You should not need to change `Student_area_0.sv` (the APB/CSR wrapper) unless you alter the buffer geometry or module parameters.
 
-To test your design, run the following command from the project root:
+Test with the same standalone flow as Task 0:
 
 ```bash
-make test_ss
+make test_ss        # batch
+make test_ss_gui    # with waveforms
 ```
 
-This testbench is meant for verifying your edge detector design before system integration.
+Check the result in `src/tb/out_images/` - it should show bright edges on a dark
+background. The testbench does not do strict per-pixel checking, so minor border
+differences between implementations are fine. Verify your design here before
+moving to system integration.
 
 
 ### 2.  Integrate the Accelerator into the SoC
 
-Once your RTL design works correctly with the standalone testbench, you may test the design with the entire system.
+Once your RTL passes the standalone testbench, run it on the whole system. Your edge detector uses the same CSR / ibuf / obuf protocol as the pixel-inversion example, so the provided CPU firmware drives it unchanged - this task is just re-running the full SoC simulation with your RTL in place. You are not expected to modify any C code here.
 
-The testbench can be found in `src/tb/tb_didactic_V1.sv`. The simulation is meant to replicate the real test that will be done on the FPGA with UART data coming from a PC.
+The system testbench is `src/tb/tb_didactic_V1.sv`. It replicates the real FPGA test: image data arrives over UART from a "PC", the CPU moves it into the accelerator, the accelerator processes it, and the result comes back. The testbench plays the PC side of the UART link via two tasks, `uart_write_byte` and `uart_receive_byte`.
 
-The testbench simulates the PC-side UART transceiver. To facilitate UART transactions the testbench implements two tasks: `uart_write_byte` and `uart_receive_byte`.
+Two shortcuts keep the run fast: a simplified UART model is used instead of the real peripheral, and the processed image is read straight from the accelerator output buffer instead of being streamed all the way back over UART.
 
-Note 1: Instead of the real UART peripheral, a simplified model is used to speed up simulation.
-Note 2: The processed image is read directly from the accelerator output buffer, skipping the UART writeback to the testbench, to save simulation time.
+**Task: skim `src/tb/tb_didactic_V1.sv`** so you know what the simulation is doing.
 
-**Task: Review the testbench `src/tb/tb_didactic_V1.sv`** 
+**Task: skim the CPU firmware [pixel_inversion.c](../sw/pixel_inversion/pixel_inversion.c).** Its flow is:
 
-The CPU C code:
-1. Initializes the 0th Student Subsystem
-2. Initializes the UART peripheral
-3. Configures the UART peripheral for desired operation
-4. Sets the accelerator ibuf address to 0
-5. Collects 4 bytes from UART and then writes to the accelerator ibuf
-6. After the full ibuf has been written polls the CSR_DONE bit in the accelerator
+1. initialise student subsystem 0 (`ss_init(0)`) and the UART peripheral,
+2. set the ibuf address pointer to 0,
+3. read the image from UART four bytes at a time and write each packed word to ibuf,
+4. once ibuf is full, set `DATA_READY` in the CSR and poll `DONE`,
+5. the UART write-back loop is present but commented out (the testbench reads obuf directly).
 
-**Task: Review the C code `sw/pixel_inversion/pixel_inversion.c`** 
-
-Build the C code to produce a .hex file that can be used to initialize the instruction memory of the CPU:
+Build the firmware into a `.hex` for instruction-memory init, from the project root:
 ```bash
 make build_test TEST=pixel_inversion
 ```
+The assembly dump is in `build/sw/pixel_inversion.asm` if you want to look.
 
-For curiosity or debugging purposes you may look at the assembly dump in `build/sw/pixel_inversion.asm`.
-
-Run the full Didactic-SoC simulation with
+Run the full simulation:
 ```bash
-make test_all TEST=pixel_inversion
-```
-To run with GUI:
-```bash
-make test_all_gui TEST=pixel_inversion
+make test_all TEST=pixel_inversion       # batch
+make test_all_gui TEST=pixel_inversion   # with waveforms + memory viewer
 ```
 
-This simulation will take about 18 mins in batch mode and more with GUI mode. 
+Expect roughly 18 minutes in batch mode (longer with the GUI). The test transfers 101376 bytes (352x288 pixels) at 20 cycles per byte -> about 2.03e6 cycles, or 20.3 ms of simulated time at 100 MHz.
 
-Even though a simplified UART model is used, it takes 20 cycles to send 1 byte (2 cycles per bit, including start and stop bits). The test transfers 101376 bytes (352×288 pixels), which equates to 101376×20 = 2.03e6 cycles. With each cycle taking 10 ns (100 MHz), the test covers 20.3 ms of simulation time.
-On an Ubuntu laptop using the Questa Starter Edition, this took approximately 18 minutes in batch mode.
+**Success criteria:** the simulation runs to completion with no errors, and `src/tb/out_images/pattern_result.pgm` appears and matches the result your standalone testbench produced.
 
-Use the below target for removing build files
+**If the simulation seems stuck:** a frozen run almost always means the CPU is spinning in one of two loops. Open the GUI (`make test_all_gui`) and check which:
+
+- **stuck filling ibuf** - the CPU never gets past the UART receive loop, so no bytes are arriving. Look at the UART model and the ibuf write side.
+- **stuck polling `DONE`** - all data is in, but your accelerator never asserts `finish`. Debug `pixel_acc`.
+
+Remove build files with:
 ```bash
 make clean_build
 ```
@@ -375,47 +353,3 @@ set $pc=0x01000080
 ```
 
 Then `monitor reset` works without setting pc (hence also no need to halt). This also allows the CPU to start executing an application after hard reset (through physical switch) if the application was uploaded in the same power cycle.
-
-
-
-# Draft space (old stuff)
-
-#### Student Task
-
-Extend the provided CPU software so that it:
-
-1. Receives an image from the computer via UART and stores it in DMEM (use the provided function - `UART_read_from_pc()`).
-2. Transfers the image data from DMEM to the accelerator input buffer and starts the accelerator.
-3. Waits until the accelerator signals that processing is complete.
-4. Transfers the processed data from the accelerator output buffer back to DMEM.
-5. Sends the processed image back to the computer via UART (use the provided function - `UART_write_to_pc()`).
-
----
-
-
-## Notes
-* Don't do pixel checking in testbench. Because the students might do different implementations. If they want to check pixels that's fine otherwise we don't care about the most precise result.
-
-
-
-## Steps
-0. Give a working blinky example for testing all the tools
-0. Implement a bus-connected frame buffer in the Didactic-SoC Student SS. Test with given testbench
-2. Integrate frame buffer
-Could also do pixel inversion, then have a status register which would indicate to the CPU the state of the peripheral (IDLE, RUNNING, DONE).
-2. Verify buffer operation by writing a small C program which would move a frame from DMEM to the new peripheral, wait for it to process, then write back to another part of memory.
-3. Develop accelerator (ACC) in isolation (we provide testbench).
-4. Integrate accelerator in the SoC. Use the simple design from milestone1 to attach the accelerator to the system.
-5. Adjust CPU software - once the image processing is done it writes the result to UART instead of back to memory.
-6. Test the full system on an FPGA. Students run their program to process an image stored in memory. The processed output is transmitted via UART and displayed on a PC using a provided application.
-7. Design improvement (Advanced tasks)
-Improve the system performance and utilization. This could be done by:
-* Improve the accelerator. For example to buffer multiple lines instead of the whole frame, then pipeline CPU transfers with accelerator execution:
-```
-CPU writes new data 
-while 
-accelerator processes previous data.
-```
-
-
-Extend the provided code so that once a full image has been loaded into DMEM the CPU moves the image into the accelerator and once processing is done call the `UART_write_image(uint32_t pic_start_addr)` function to send the image back to the PC.
