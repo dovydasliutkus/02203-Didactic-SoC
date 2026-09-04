@@ -17,11 +17,7 @@
 
 `make` drives every build and simulation flow in this project.
 
-**Linux:** Make is typically pre-installed. If not:
-```bash
-sudo apt install make
-```
-Verify with `make --version`.
+**Linux:** Make is typically pre-installed. If not install through your package manager.
 
 **Windows:** The recommended way is to install the [Chocolatey](https://chocolatey.org)
 package manager and then use it to install `make`.
@@ -90,10 +86,10 @@ Questa Starter Edition is a free HDL simulator used in this lab.
      *Settings -> Network & Internet -> <your adapter> -> Hardware properties ->
      Physical address (MAC)*.
    - **Linux:** run `ip link`; the wired interface is `en*` / `eth*`, wireless is
-     `wl*`. Use the value after `link/ether`.
-4. You will receive a `.dat` license file by email (can take a while).
-5. Point Questa at it via the `SALT_LICENSE_FILE` environment variable:
-   - **Windows:** `setx SALT_LICENSE_FILE "C:\licenses\questa.dat"` (or use "Edit environment variables" )
+     `wl*`.
+4. You will receive a `.dat` license file by email.
+5. Point Questa at it via the `SALT_LICENSE_FILE` environment variable (adjust path to your saved location):
+   - **Windows:** `setx SALT_LICENSE_FILE "C:\licenses\questa.dat"` (or use System Properties -> Environment Variables)
    - **Linux:** `export SALT_LICENSE_FILE=$HOME/licenses/questa.dat` in `~/.bashrc`
 
 #### Verify
@@ -102,12 +98,12 @@ Questa Starter Edition is a free HDL simulator used in this lab.
 vsim -version
 ```
 
-First time using Questa? Glance over the [Questa Quick-Start Guide](https://docs.altera.com/r/docs/691278/21.3/questa-intel-fpga-edition-quick-start-intel-quartus-prime-pro-edition/questa-intel-fpga-edition-quick-start-intel-quartus-prime-pro-edition).
+First time using Questa? Glance over the [Questa Quick-Start Guide](https://docs.altera.com/r/docs/691278/21.3/questa-intel-fpga-edition-quick-start-intel-quartus-prime-pro-edition/questa-intel-fpga-edition-quick-start-intel-quartus-prime-pro-edition). You will mostly care about adding/manipulating waveform signals as the compilation is already automated.
 
 ### 3. WSL2 (Windows only)
 
 WSL2 provides the Linux environment used to run the RISC-V cross-compiler
-(Section 4). Skip this section on Linux.
+(Section 4) and Bender dependency manager (Section 5). Skip this section on Linux.
 
 <!-- **Requirements:** Windows 10 21H2+ or Windows 11, administrator rights, and
 hardware virtualization enabled in the BIOS/UEFI (Intel VT-x / AMD-V). Most
@@ -231,8 +227,8 @@ user, install the udev rules shipped with OpenOCD (or add a rule for the FTDI
 `0403:6010`) and re-plug the board:
 ```bash
 sudo cp /usr/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules && sudo udevadm trigger -->
-```
+sudo udevadm control --reload-rules && sudo udevadm trigger
+``` -->
 
 **Windows:**
 

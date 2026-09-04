@@ -1,78 +1,67 @@
-# Didactic SoC
+# 02203 - Image processing accelerator with CPU data transport
 
-This is the common chip template for the Edu4chip project. It is created with IP-XACT modeling using the Kactus2 tool. Source files are reused from both open source and previous projects. This project is licensed under the terms of the Solderpad Hardware License v2.1.
+This repository holds the hardware, firmware and tool flow for the design lab in
+**02203 Design of Digital Systems** at DTU. You implement an edge detection
+accelerator in SystemVerilog, integrate it into the **Didactic-SoC** and run the complete image round trip in simulation and
+on an FPGA board.
 
-See Doc Folder for more extensive documentation and guides as well as contribution guidelines (some of which are yet to be written).
+The Didactic-SoC itself comes from the [Edu4Chip](https://edu4chip.eu/) project.
+It is licensed under the Solderpad Hardware License v2.1 (see [LICENSE](LICENSE)).
 
-## SoC Architecture
+## Start here
 
-Didactic aims to have simple SoC architecture while being easily extendable for various education and prototyping purposes.
+Two documents cover everything you need for the lab:
 
-![Didactic SoC architecture](doc/figures/didactic_architecture.drawio.svg "SoC Architecture Diagram")
+1. **[doc/02203_Software_setup.md](doc/02203_Software_setup.md)** - install and
+   verify the tools.
+2. **[doc/02203_Lab_Guide.md](doc/02203_Lab_Guide.md)** - the lab itself: the SoC
+   in brief, the accelerator interface, and the tasks from first simulation
+   through to running on the board.
 
-In addition to these requirements, system needs to be reliable and have enough peripherals to operate as controller to manage various student subsystems.
+Everything else in [doc/](doc/) is background reference - useful if you are
+curious, not required to finish the lab.
+[the-didactic-soc-platform.md](doc/the-didactic-soc-platform.md) is the one worth
+knowing about: it holds the full memory map and register listing.
 
-### Interconnect type
+Run all `make` commands from this directory (the project root). On Windows, use
+`make -f Makefile.win` instead of `make`.
 
-SoC architecture is interconnect bus-type agnostic. Currently, we support AXI4LITE and OBI bus. These are 1.0 and 1.1 SoC builds. OBI is more area and performance optimized due to not requiring converters while axi4lite build has better confidence in correctness.
+## Directory structure
 
-To use different types, regenerate rtl code from Kactus2 Didactic top level and replace filelist command argument <code>didactic_obi</code> or <code>didactic_axi</code>
+```
+.
+|-- doc/           Documentation. Lab guide, software setup, platform reference
+|-- src/
+|   |-- rtl/       SoC RTL. Your work goes in pixel_acc.sv (and Student_area_0.sv)
+|   |-- tb/        Testbenches, plus src_images/ and out_images/ for .pgm files
+|   |-- reuse/     Open-source IP reused as-is
+|   |-- generated/ RTL generated from the IP-XACT model (do not edit by hand)
+|-- sw/            Baremetal C firmware, one folder per program
+|   |-- common/    Shared headers and drivers (UART, subsystem init, startup)
+|   |-- pixel_inversion/  The example firmware that drives the accelerator
+|-- sim/           Questa simulation flow: Makefiles, file lists, waveform scripts
+|-- fpga/          Vivado flow: constraints, scripts, and the Python serial GUI
+|-- build/         All tool output. Created by make, not in git
+|-- vendor_ips/    Dependencies fetched by `make repository_init`, not in git
+|-- Bender.yml     Hardware dependency manifest
+|-- Makefile       Top-level flow (Makefile.win for Windows)
+```
 
-## Get started
+## Quick reference
 
-This repository uses Bender, install instructions [here](https://github.com/pulp-platform/bender).
+Fetch the hardware dependencies once, after cloning:
 
-After cloning this repository, run `make repository_init` to fetch all of the dependencies to correct versions. Bender initialization will offer user to resolve dependencies interactively. In these, it is correct to resolve to use ones required by this repository. Generally, these are updated to be latest releases (in either git tag or git commit hash form).
+```bash
+make repository_init
+```
 
-## Basic simulation flow
+Then the flows used throughout the lab:
 
-Running Baremetal program on IBEX core has been abstracted to `make test_all TEST=blink` command.
+| Command | What it does |
+|---------|--------------|
+| `make build_test TEST=pixel_inversion` | Cross-compile the firmware to a `.hex` for instruction memory |
+| `make test_ss` / `make test_ss_gui` | Simulate the accelerator on its own (no CPU) |
+| `make test_all TEST=pixel_inversion` | Simulate the whole SoC running the firmware |
+| `make clean_build` | Remove build outputs |
 
-This will build HW libraries (`Questa`), executable binary (`riscv-toolchain`), convert binary to hexfile (`elf2hex`) and finally run the simulator (`Questa`). Testcase targets folder in sw folder and expects it to contain .c file with same name. Eg. <code>sw/hello/hello.c</code>.
-
-## Folders
-
-.bender: Open source IP are added to this project as bender dependencies. They are described in bender.yml and this folder is created by bender tool. Folder itself is not part of the repository. 
-
-build: Not included by git repository. Created as part of make commands to contain all tool outputs.
-
-doc: All documentation is gathered within this folder.
-
-fpga: Tool scripts, documentation and constraint files for FPGA platforms should be added to this folder.
-
-ipxact: XML files of IP-XACT definitions are kept within this folder.
-
-sim: Simulation Makefiles and scripts are kept in this folder. Additionally, supporting files and/or scripts such as for waveform generation can be added here. 
-
-* All tool scripts need to include capability of targeting bender with scripts or make commands. Calling bender with particular commands produce output of files to target the build with. Examples are provided for questa and verilator uses.
-
-scripts: General use scripts that are not directly part of any other major categories can be added here.
-
-src: RTL source files are added to this folder in relevant subfolders. Student subsystems can be added either as submodules, bender dependencies or directly to this fodler. If your RTL is not publicly available, create a tieoff module to allow others to proceed with their work. (Tieoff: interface .sv/.v/.vhd that matches with the original RTL with all outputs being driven with inactive constant 0's.)
-
-sw: Baremetal programs and their flow. These include common headers and simple test cases to run on RISC-V core. These may later include test cases for various student subsystems. 
-
-syn: Synthesis Makefiles and commands. Open source tools only.
-
-.vendor_ips: Not included by repository. Submodules that do not directly support bender are added as vendor dependencies in bender.yml and fetched to this folder.
-
-Verification: Contains experimental verilator setup and verification PyUVM platform for student subsystems.
-
-## What is currently missing
-
-* simulation flow currently only supports .v / .sv files.
-
-* SW common functions are missing some desirable features (eg. uart overloading for printing int values).
-
-* irq support for baremetal c programs. `crt0.S` implementation is minimal and needs to be extended to contain IRQ handling.
-
-* tool commands for syn / nandgate. These estimations could be useful for early exploration.
-
-* Documentation is incomplete. Once complete, it should contain details why certain template architecture was chosen as well as more extensive documentation what is included where. Additionally, template documentation should be added for "student" systems to document themselves.
-
-* pcb related items such as external clock frequency, connetivity. Initial assumption is to have single external clock source (signal generator / oscillator) and internal faster option.
-
-## What is excluded from repository
-
-* tool outputs: tools should create build folder for their output. None of this folder content should be part of the git repository. IF need be, provide documentation how to run tools to get the same output.
-
+The lab guide explains what each of these does and when you need it.
