@@ -245,8 +245,8 @@ This compiles `fpga/sw/pixel_inversion/pixel_inversion.c` into `build/fpga/sw/`.
 #### Synthesize, implement, and generate the bitstream
 
 ```bash
-make all_xilinx        # batch
-make all_xilinx_gui    # same flow with the Vivado GUI open
+make all_xilinx TEST=pixel_inversion         # batch
+make all_xilinx_gui TEST=pixel_inversion     # same flow with the Vivado GUI open
 ```
 
 **Order matters:** the firmware is baked into the bitstream as instruction-memory initialisation data, so ensure it was built successfully before running this. Any later change to `fpga/sw/` or to your RTL means re-running `all_xilinx` - or use JTAG (Task 5) to reload just the firmware without re-synthesising.
@@ -258,6 +258,8 @@ If synthesis fails, check your RTL for **unsynthesizable constructs**: `initial`
 Connect the Nexys A7 by USB and power it on. In Vivado GUI open **Hardware Manager -> Open Target -> Auto Connect -> Program Device**, and select the generated bitstream in `build/fpga/nexys_a7/didactic-nexys_a7.runs/impl_1/` (`*.bit`). To browse the project itself, open Vivado and choose *Open Project* -> `build/fpga/nexys_a7/didactic-nexys_a7.xpr`.
 
 The bitstream carries the instruction-memory contents, so the CPU program starts running the moment programming finishes - there is no separate load step.
+
+The **rightmost slide switch** (SW0, FPGA pin `J15`) is wired to the SoC reset - up means reset inactive, down means reset active. Toggle it to restart the CPU from the beginning of the program.
 
 ### 4. Test with the serial interface GUI
 
@@ -335,7 +337,7 @@ continue
 
 `0x01000080` is the firmware entry point (IMEM base `0x01000000` + `crt0` offset.
 
-> A hard reset with the board's physical button also starts the newly uploaded firmware, as long as it was loaded in the same power cycle. This can be more reliable than reset through JTAG
+> A hard reset with the board's reset switch (rightmost slide switch, SW0 / pin `J15`) also starts the newly uploaded firmware, as long as it was loaded in the same power cycle. This can be more reliable than reset through JTAG.
 
 #### GDB reference
 

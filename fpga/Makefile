@@ -8,7 +8,7 @@
 SHELL = bash
 VIVADO ?= vivado
 
-export TEST ?= blink
+export TEST ?= pixel_inversion
 
 export BUILD_DIR ?= ../build
 export PROJECT ?= nexys_a7

@@ -85,7 +85,7 @@ if { $PROJECT eq "z1" } {
   set_property top DidacticNexys_A7 [current_fileset]
   
   # Initialise IMEM from the firmware hex built by 'make build_test TEST=<name>'
-  if { [info exists ::env(TEST)] } { set TEST $::env(TEST) } else { set TEST "blink" }
+  set TEST $::env(TEST)
   set IMEM_INIT_FILE [file normalize "$DIR/../build/fpga/sw/${TEST}.hex"]
   set_property generic "IMEM_INIT_FILE=$IMEM_INIT_FILE" [current_fileset]
   puts "INFO: IMEM init file -> $IMEM_INIT_FILE"
