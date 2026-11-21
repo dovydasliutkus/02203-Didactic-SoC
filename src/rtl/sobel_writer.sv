@@ -1,6 +1,7 @@
 module sobel_writer #(
     parameter int BUF_AW    = 15,
-    parameter int BUF_DEPTH = 25344
+    parameter int IMG_WIDTH = 88,
+    parameter int IMG_HEIGHT = 288
 )(
     input  logic               clk,
     input  logic               rst_n,
@@ -13,19 +14,19 @@ module sobel_writer #(
     input  logic               first,
     input  logic               write,
     input  logic               flush,
-    input  logic               zero_row,
+//    input  logic               zero_row,
 
     output logic               obuf_wr_en,
     output logic [BUF_AW-1:0]  obuf_wr_addr,
     output logic [31:0]        obuf_wr_data
 );
 
-    typedef enum logic [2:0] {
-        IDLE    = 3'd0,
-        STORE_2 = 3'd1,
-        STORE_4 = 3'd2,
-        FLUSH   = 3'd3,
-        ZERO    = 3'd4
+    typedef enum logic [1:0] {
+        IDLE    = 2'd0,
+        STORE_2 = 2'd1,
+        STORE_4 = 2'd2,
+        FLUSH   = 2'd3
+//        ZERO    = 3'd4
     } state_t;
 
     state_t             state_q, state_d;
@@ -36,7 +37,8 @@ module sobel_writer #(
     logic               wr_en;
     logic [31:0]        wr_data;
 
-    localparam logic [BUF_AW-1:0] WA_LAST = BUF_AW'(BUF_DEPTH - 1);
+    localparam logic [BUF_AW-1:0] WA_FIRST = BUF_AW'(IMG_WIDTH);
+    localparam logic [BUF_AW-1:0] WA_LAST = BUF_AW'(IMG_WIDTH * (IMG_HEIGHT - 1) - 1);
 
     always_comb begin : behavior
         wr_en   = 1'b0;
@@ -51,9 +53,10 @@ module sobel_writer #(
                     state_d = STORE_2;
                 end else if (write) begin
                     state_d = STORE_4;
-                end else if (zero_row) begin
-                    state_d = ZERO;
                 end
+                // end else if (zero_row) begin
+                //     state_d = ZERO;
+                // end
             end
             STORE_2: begin
                 carry_d = {pixel_3, pixel_2, 8'b0};
@@ -68,23 +71,23 @@ module sobel_writer #(
             FLUSH: begin
                 wr_en   = 1'b1;
                 wr_data = {8'b0, carry_q};
-                state_d = zero_row ? ZERO : IDLE;
+                state_d = /*zero_row ? ZERO :*/ IDLE;
             end
-            ZERO: begin
-                wr_en   = 1'b1;
-                state_d = zero_row ? ZERO : IDLE;
-            end
+            // ZERO: begin
+            //     wr_en   = 1'b1;
+            //     state_d = zero_row ? ZERO : IDLE;
+            // end
             default: state_d = IDLE;
         endcase
 
         if (wr_en)
-            wa_d = (wa_q == WA_LAST) ? '0 : wa_q + 1'b1;
+            wa_d = (wa_q == WA_LAST) ? WA_FIRST : wa_q + 1'b1;
     end
 
     always_ff @(posedge clk or negedge rst_n) begin : fsm
         if (!rst_n) begin
             state_q <= IDLE;
-            wa_q    <= '0;
+            wa_q    <= WA_FIRST;
             carry_q <= '0;
         end else begin
             state_q <= state_d;

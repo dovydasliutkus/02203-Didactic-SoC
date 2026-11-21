@@ -1,9 +1,10 @@
 `timescale 1ns/1ns
 
 // Drives sobel_writer with the command sequence the controller produces
-// (zero_top, first/write per group, flush per row, zero_bot) and random
-// pixels, records every obuf write, and compares the resulting frame with
-// the expected output image. Two frames back-to-back exercise the wa wrap.
+// (first/write per group, flush per row) and random pixels, records every
+// obuf write, and compares the interior of the frame with the expected
+// output image. Border rows 0 and IMG_HEIGHT-1 must never be written. Two
+// frames back-to-back exercise the wa wrap.
 //
 // Pixels are only valid in the comp cycle and the cycle after it (the
 // window the loader holds stable); every other cycle they are garbage.
@@ -14,6 +15,9 @@ module tb_sobel_writer;
     localparam int IMG_HEIGHT = 288;
     localparam int BUF_DEPTH  = IMG_WIDTH * IMG_HEIGHT;
     localparam int ROW_PIX    = IMG_WIDTH * 4;
+    localparam int WA_FIRST   = IMG_WIDTH;
+    localparam int WA_END     = IMG_WIDTH * (IMG_HEIGHT - 1);
+    localparam int N_WORDS    = WA_END - WA_FIRST;
     localparam int FRAMES     = 2;
     localparam int MAX_REPORT = 10;
 
@@ -22,14 +26,15 @@ module tb_sobel_writer;
     logic rst_n;
 
     logic [7:0]        pixel [4];
-    logic              first, write, flush, zero_row;
+    logic              first, write, flush;
     logic              obuf_wr_en;
     logic [BUF_AW-1:0] obuf_wr_addr;
     logic [31:0]       obuf_wr_data;
 
     sobel_writer #(
-        .BUF_AW    (BUF_AW),
-        .BUF_DEPTH (BUF_DEPTH)
+        .BUF_AW     (BUF_AW),
+        .IMG_WIDTH  (IMG_WIDTH),
+        .IMG_HEIGHT (IMG_HEIGHT)
     ) dut (
         .clk          (clk),
         .rst_n        (rst_n),
@@ -40,7 +45,6 @@ module tb_sobel_writer;
         .first        (first),
         .write        (write),
         .flush        (flush),
-        .zero_row     (zero_row),
         .obuf_wr_en   (obuf_wr_en),
         .obuf_wr_addr (obuf_wr_addr),
         .obuf_wr_data (obuf_wr_data)
@@ -50,10 +54,10 @@ module tb_sobel_writer;
     logic [7:0] p [IMG_HEIGHT][IMG_WIDTH][4];
 
     // Output column x comes from group k = (x+1)/4, kernel i = (x+1)%4.
-    // Column 0 and the last column are border pixels and must be 0.
+    // Column 0 and the last column share a word with real pixels, so they
+    // are still written, as 0.
     function automatic logic [7:0] expected_pixel(int row, int col);
-        if (row == 0 || row == IMG_HEIGHT - 1) return 8'h00;
-        if (col == 0 || col == ROW_PIX - 1)    return 8'h00;
+        if (col == 0 || col == ROW_PIX - 1) return 8'h00;
         return p[row][(col + 1) / 4][(col + 1) % 4];
     endfunction
 
@@ -62,6 +66,10 @@ module tb_sobel_writer;
         int col = 4 * (addr % IMG_WIDTH);
         return {expected_pixel(row, col + 3), expected_pixel(row, col + 2),
                 expected_pixel(row, col + 1), expected_pixel(row, col)};
+    endfunction
+
+    function automatic bit is_border_row(int addr);
+        return addr < WA_FIRST || addr >= WA_END;
     endfunction
 
     int errors = 0;
@@ -93,11 +101,10 @@ module tb_sobel_writer;
         #1;
     endtask
 
-    task automatic set_cmd(bit f, bit w, bit fl, bit z);
-        first    = f;
-        write    = w;
-        flush    = fl;
-        zero_row = z;
+    task automatic set_cmd(bit f, bit w, bit fl);
+        first = f;
+        write = w;
+        flush = fl;
     endtask
 
     task automatic garbage_pixels();
@@ -108,28 +115,20 @@ module tb_sobel_writer;
         foreach (pixel[i]) pixel[i] = p[r][k][i];
     endtask
 
-    task automatic zero_phase();
-        garbage_pixels();
-        repeat (IMG_WIDTH) begin
-            set_cmd(0, 0, 0, 1);
-            step();
-        end
-    endtask
-
     // One group = load x3, wait, comp (5 cycles). The previous group's
     // pixels stay valid through the first load cycle; after the last group
-    // of a row the cycle after comp is flush instead.
+    // of a row the cycle after comp is NEXT_ROW (flush) instead.
     task automatic run_group(int r, int k);
-        set_cmd(0, 0, 0, 0);
+        set_cmd(0, 0, 0);
         step();
         repeat (3) begin
             garbage_pixels();
             step();
         end
         valid_pixels(r, k);
-        set_cmd(k == 0, k != 0, 0, 0);
+        set_cmd(k == 0, k != 0, 0);
         step();
-        set_cmd(0, 0, 0, 0);
+        set_cmd(0, 0, 0);
         if (k == IMG_WIDTH - 1) begin
             flush = 1'b1;
             step();
@@ -139,9 +138,15 @@ module tb_sobel_writer;
     endtask
 
     task automatic check_frame(int f);
-        int missing = 0, multiple = 0;
+        int missing = 0, multiple = 0, border = 0;
         for (int a = 0; a < BUF_DEPTH; a++) begin
-            if (written[a] == 0) begin
+            if (is_border_row(a)) begin
+                if (written[a] != 0) begin
+                    border++;
+                    fail($sformatf("frame %0d: border word %0d (row %0d) written %0d times",
+                                   f, a, a / IMG_WIDTH, written[a]));
+                end
+            end else if (written[a] == 0) begin
                 missing++;
                 fail($sformatf("frame %0d: word %0d (row %0d, word %0d) never written",
                                f, a, a / IMG_WIDTH, a % IMG_WIDTH));
@@ -155,14 +160,14 @@ module tb_sobel_writer;
                                    f, a, a / IMG_WIDTH, a % IMG_WIDTH, obuf[a], expected_word(a)));
             end
         end
-        if (n_writes != BUF_DEPTH)
-            fail($sformatf("frame %0d: %0d writes, expected %0d", f, n_writes, BUF_DEPTH));
-        $display("INFO: frame %0d: %0d writes, %0d missing, %0d duplicated, %0d errors total",
-                 f, n_writes, missing, multiple, errors);
+        if (n_writes != N_WORDS)
+            fail($sformatf("frame %0d: %0d writes, expected %0d", f, n_writes, N_WORDS));
+        $display("INFO: frame %0d: %0d writes, %0d missing, %0d duplicated, %0d border, %0d errors total",
+                 f, n_writes, missing, multiple, border, errors);
     endtask
 
     initial begin
-        set_cmd(0, 0, 0, 0);
+        set_cmd(0, 0, 0);
         garbage_pixels();
         n_writes = 0;
         rst_n    = 1'b0;
@@ -175,14 +180,12 @@ module tb_sobel_writer;
             foreach (written[a]) written[a] = 0;
             n_writes = 0;
 
-            set_cmd(0, 0, 0, 0);                  // controller idle
+            set_cmd(0, 0, 0);                     // controller idle
             step();
-            zero_phase();                         // zero_top
             for (int r = 1; r <= IMG_HEIGHT - 2; r++)
                 for (int k = 0; k < IMG_WIDTH; k++)
                     run_group(r, k);
-            zero_phase();                         // zero_bot
-            set_cmd(0, 0, 0, 0);                  // done
+            set_cmd(0, 0, 0);                     // done
             repeat (4) step();
 
             check_frame(f);

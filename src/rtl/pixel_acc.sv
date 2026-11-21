@@ -54,7 +54,7 @@ module pixel_acc #(
     logic                 first;
     logic                 write;
     logic                 flush;
-    logic                 zero_row;
+    //logic                 zero_row;
 
     logic [2:0][2:0][7:0] win_0, win_1, win_2, win_3;
     logic [7:0]           pixel_0, pixel_1, pixel_2, pixel_3;
@@ -72,8 +72,8 @@ module pixel_acc #(
         .init     (init),
         .first    (first),
         .write    (write),
-        .flush    (flush),
-        .zero_row (zero_row)
+        .flush    (flush)
+        //.zero_row (zero_row)
     );
 
     sobel_loader #(
@@ -102,7 +102,8 @@ module pixel_acc #(
 
     sobel_writer #(
         .BUF_AW    (BUF_AW),
-        .BUF_DEPTH (BUF_DEPTH)
+        .IMG_WIDTH (IMG_WIDTH),
+        .IMG_HEIGHT (IMG_HEIGHT)
     ) u_wr (
         .clk          (clk),
         .rst_n        (rst_n),
@@ -113,7 +114,7 @@ module pixel_acc #(
         .first        (first),
         .write        (write),
         .flush        (flush),
-        .zero_row     (zero_row),
+        //.zero_row     (zero_row),
         .obuf_wr_en   (obuf_wr_en),
         .obuf_wr_addr (obuf_wr_addr),
         .obuf_wr_data (obuf_wr_data)
